@@ -1,0 +1,31 @@
+gantt
+    title Cronograma de Desenvolvimento - M-TAU (2026.1)
+    dateFormat  YYYY-MM-DD
+    axisFormat  %d/%m
+    
+    section TG1: Planejamento
+    TAP, Cronograma e EAP           :active, task1, 2026-02-18, 2026-02-24
+    Marcos TG1 - Entrega 1          :milestone, m1, 2026-02-24, 0d
+    Requisitos e Modelagem (I)      :task2, 2026-02-25, 2026-03-03
+    Marcos TG1 - Entrega 2          :milestone, m2, 2026-03-03, 0d
+    Prototipação e Wireframes       :task3, 2026-03-04, 2026-03-24
+    Marcos TG1 - Entrega 3          :milestone, m3, 2026-03-24, 0d
+
+    section TG2: DevOps e Infra
+    Configuração Repositório e Licença :task4, 2026-03-25, 2026-03-30
+    Pipeline CI/CD e Cloud (Azure)     :task5, 2026-03-25, 2026-03-30
+    Marcos TG2 - Entrega 4             :milestone, m4, 2026-03-30, 0d
+    Fechamento N1                      :crit, 2026-03-31, 1d
+
+    section TG3: Desenvolvimento
+    Modelagem Refinada (Classes/Seq)   :task6, 2026-04-01, 2026-04-15
+    Contratos de API e Backend (60%)   :task7, 2026-04-01, 2026-04-27
+    Integração Frontend (60%)          :task8, 2026-04-15, 2026-04-27
+    Marcos TG3 - Entregas 6 e 7        :milestone, m5, 2026-04-27, 0d
+    Fase Final de Implementação        :task9, 2026-04-28, 2026-05-15
+    Casos de Teste e Refatoração       :task10, 2026-05-10, 2026-05-20
+
+    section TG4: Encerramento
+    Documentação Final e Vídeo         :task11, 2026-05-16, 2026-05-26
+    Apresentação do Trabalho           :task12, 2026-05-20, 2026-05-26
+    Marcos TG4 - Entrega Final         :milestone, m6, 2026-05-26, 0d

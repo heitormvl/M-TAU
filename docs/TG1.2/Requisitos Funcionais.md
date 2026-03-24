@@ -1,0 +1,13 @@
+# Especificação de Requisitos Funcionais - M-TAU
+
+| ID   | Nome                    | Descrição                                                        | Prioridade | Critérios de Aceite (DoD) |
+|------|-------------------------|------------------------------------------------------------------|------------|---------------------------|
+| RF01 | Gestão de Usuários      | Cadastro, login e edição de perfil.                              | Essencial  | 1. O sistema deve validar e-mails duplicados.<br>2. Senhas devem ser armazenadas com Hash.<br>3. O login deve retornar um JWT válido. |
+| RF02 | Catálogo de Produtos    | Anúncio de tecnologias assistivas com fotos.                     | Essencial  | 1. O vendedor deve conseguir subir pelo menos 1 foto por anúncio.<br>2. O anúncio deve ser vinculado obrigatoriamente ao ID do vendedor. |
+| RF03 | Filtros Especializados  | Busca por categorias de deficiência (Física, Visual, Auditiva, Cognitiva). | Essencial  | 1. Ao selecionar "Visual", o sistema não deve exibir produtos de outras categorias.<br>2. A busca deve funcionar de forma combinada (texto + categoria). |
+| RF04 | Especificações Técnicas | Campos para medidas, peso suportado e tempo de uso.              | Importante | 1. Os campos de peso e medida devem aceitar apenas valores numéricos.<br>2. O tempo de uso deve ser selecionado via dropdown (ex: <1 ano, 1-3 anos, etc). |
+| RF05 | Chat em Tempo Real      | Comunicação direta entre as partes.                              | Importante | 1. As mensagens devem ser persistidas no banco de dados.<br>2. O sistema deve indicar quem é o remetente e o destinatário. |
+| RF06 | Gateway de Pagamento    | Processamento via API externa (Stripe/Mercado Pago).             | Essencial  | 1. O sistema deve receber o Webhook de confirmação de pagamento.<br>2. O status do produto deve mudar para "Vendido" automaticamente após a aprovação. |
+| RF07 | Sistema de Avaliação    | Notas e comentários após a negociação.                           | Desejável  | 1. O formulário de avaliação só deve ser liberado após o status do pedido ser "Concluído".<br>2. A média de avaliação deve aparecer no perfil do usuário. |
+| RF08 | Cálculo de Localização  | Integração com API de CEP.                                       | Importante | 1. Ao digitar o CEP, o sistema deve preencher automaticamente Bairro e Cidade.<br>2. O custo do frete não será calculado (fora de escopo), apenas a origem. |
+| RF09 | Gestão de Inventário    | Pausar, editar ou excluir anúncios.                              | Essencial  | 1. Um anúncio pausado não deve aparecer na busca pública.<br>2. A exclusão deve ser lógica (soft delete) para manter integridade de logs. |
