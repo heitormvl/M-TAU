@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout Seguro | M-TAU</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    />
+
+    <style>
+      /* Variáveis de Alto Contraste e Identidade Visual */
+      :root {
+        --primary-color: #004b87;
+        --secondary-color: #f8f9fa;
+        --text-color: #212529;
+        --focus-color: #ffc107;
+        --success-color: #198754;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--text-color);
+        background-color: var(--secondary-color);
+      }
+
+      /* Hit Targets (Áreas de Clique) - Mínimo 48x48px */
+      .hit-target {
+        min-height: 48px;
+        min-width: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Foco Acessível (RNF01) */
+      a:focus,
+      button:focus,
+      input:focus,
+      select:focus,
+      .form-check-input:focus {
+        outline: 4px solid var(--focus-color) !important;
+        outline-offset: 2px !important;
+        box-shadow: none !important;
+        border-color: var(--primary-color) !important;
+      }
+
+      .navbar-custom {
+        background-color: var(--primary-color);
+      }
+
+      .navbar-custom .navbar-brand {
+        color: #ffffff;
+        font-weight: 600;
+      }
+
+      .checkout-container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      .card-custom {
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      }
+
+      /* Estilização para os métodos de pagamento */
+      .payment-method-label {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        min-height: 60px; /* Excelente área de clique */
+      }
+
+      .form-check-input:checked + .payment-method-label {
+        border-color: var(--primary-color);
+        background-color: #e9ecef;
+      }
+
+      .form-check-input {
+        width: 1.5em;
+        height: 1.5em;
+        margin-top: 0;
+        margin-right: 1rem;
+      }
+
+      .order-summary-bg {
+        background-color: #f1f3f5;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <nav
+        class="navbar navbar-expand navbar-custom py-3"
+        aria-label="Navegação Principal"
+      >
+        <div class="container checkout-container">
+          <a
+            class="navbar-brand hit-target"
+            href="#"
+            aria-label="Voltar para o carrinho"
+          >
+            <i class="fa-solid fa-arrow-left me-2" aria-hidden="true"></i>
+            Voltar
+          </a>
+          <span class="text-white fw-bold mx-auto">
+            <i class="fa-solid fa-lock me-2" aria-hidden="true"></i> Checkout
+            Seguro
+          </span>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container py-5 checkout-container">
+      <h1 class="h3 fw-bold mb-4">Finalizar Compra</h1>
+
+      <form action="#" aria-label="Formulário de pagamento">
+        <div class="row g-4">
+          <div class="col-12 col-lg-7">
+            <section
+              class="card-custom p-4 mb-4"
+              aria-labelledby="titulo-retirada"
+            >
+              <h2
+                id="titulo-retirada"
+                class="h5 fw-bold border-bottom pb-2 mb-3"
+              >
+                Opção de Retirada
+              </h2>
+              <div
+                class="alert alert-info d-flex align-items-center mb-0"
+                role="alert"
+              >
+                <i
+                  class="fa-solid fa-circle-info fs-4 me-3"
+                  aria-hidden="true"
+                ></i>
+                <div>
+                  Conforme combinado via chat, a retirada deste equipamento será
+                  feita diretamente com o vendedor:
+                  <strong>Clínica Reabilitar (São Paulo, SP)</strong>.
+                </div>
+              </div>
+            </section>
+
+            <section class="card-custom p-4" aria-labelledby="titulo-pagamento">
+              <h2
+                id="titulo-pagamento"
+                class="h5 fw-bold border-bottom pb-2 mb-3"
+              >
+                Método de Pagamento
+              </h2>
+
+              <fieldset>
+                <legend class="visually-hidden">
+                  Escolha como deseja pagar
+                </legend>
+
+                <div class="form-check mb-3 p-0">
+                  <input
+                    class="form-check-input position-absolute visually-hidden"
+                    type="radio"
+                    name="paymentMethod"
+                    id="creditCard"
+                    value="credit"
+                    checked
+                  />
+                  <label class="payment-method-label w-100" for="creditCard">
+                    <div
+                      class="form-check-input flex-shrink-0"
+                      style="position: static"
+                    ></div>
+                    <i
+                      class="fa-solid fa-credit-card fs-4 text-primary me-3"
+                      aria-hidden="true"
+                    ></i>
+                    <span class="fw-bold"
+                      >Cartão de Crédito (Processado via Stripe)</span
+                    >
+                  </label>
+                </div>
+
+                <div class="bg-light p-3 rounded mb-4 border">
+                  <div class="mb-3">
+                    <label for="cardNumber" class="form-label fw-bold"
+                      >Número do Cartão</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control form-control-lg hit-target"
+                      id="cardNumber"
+                      placeholder="0000 0000 0000 0000"
+                      aria-required="true"
+                    />
+                  </div>
+                  <div class="row">
+                    <div class="col-6">
+                      <label for="cardExpiry" class="form-label fw-bold"
+                        >Validade</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control form-control-lg hit-target"
+                        id="cardExpiry"
+                        placeholder="MM/AA"
+                        aria-required="true"
+                      />
+                    </div>
+                    <div class="col-6">
+                      <label for="cardCvc" class="form-label fw-bold"
+                        >CVC</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control form-control-lg hit-target"
+                        id="cardCvc"
+                        placeholder="123"
+                        aria-required="true"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-check p-0">
+                  <input
+                    class="form-check-input position-absolute visually-hidden"
+                    type="radio"
+                    name="paymentMethod"
+                    id="pix"
+                    value="pix"
+                  />
+                  <label class="payment-method-label w-100" for="pix">
+                    <div
+                      class="form-check-input flex-shrink-0"
+                      style="position: static"
+                    ></div>
+                    <i
+                      class="fa-brands fa-pix fs-4 text-success me-3"
+                      aria-hidden="true"
+                    ></i>
+                    <span class="fw-bold">PIX (Aprovação imediata)</span>
+                  </label>
+                </div>
+              </fieldset>
+            </section>
+          </div>
+
+          <div class="col-12 col-lg-5">
+            <aside
+              class="card-custom p-4 order-summary-bg sticky-lg-top"
+              style="top: 2rem"
+              aria-labelledby="titulo-resumo"
+            >
+              <h2 id="titulo-resumo" class="h5 fw-bold border-bottom pb-2 mb-3">
+                Resumo do Pedido
+              </h2>
+
+              <div class="d-flex mb-3">
+                <div
+                  class="bg-white border rounded p-2 me-3 d-flex align-items-center justify-content-center"
+                  style="width: 80px; height: 80px"
+                >
+                  <i
+                    class="fa-solid fa-wheelchair fs-2 text-secondary"
+                    aria-hidden="true"
+                  ></i>
+                </div>
+                <div>
+                  <h3 class="h6 fw-bold mb-1">
+                    Cadeira de Rodas Monobloco Alumínio
+                  </h3>
+                  <p class="text-muted small mb-0">
+                    Vendido por: Clínica Reabilitar
+                  </p>
+                </div>
+              </div>
+
+              <hr />
+
+              <div class="d-flex justify-content-between mb-2">
+                <span>Subtotal</span>
+                <span>R$ 2.450,00</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2 text-success">
+                <span>Taxa M-TAU (Isenta para PCD)</span>
+                <span>- R$ 0,00</span>
+              </div>
+
+              <hr />
+
+              <div class="d-flex justify-content-between mb-4">
+                <span class="h5 fw-bold">Total</span>
+                <span class="h5 fw-bold text-primary">R$ 2.450,00</span>
+              </div>
+
+              <button
+                type="submit"
+                class="btn btn-primary btn-lg w-100 hit-target fw-bold shadow-sm"
+                aria-label="Confirmar pagamento de dois mil quatrocentos e cinquenta reais"
+              >
+                <i class="fa-solid fa-shield-check me-2" aria-hidden="true"></i>
+                Pagar R$ 2.450,00
+              </button>
+
+              <p class="text-center text-muted small mt-3 mb-0">
+                <i class="fa-solid fa-lock me-1" aria-hidden="true"></i>
+                Pagamento seguro processado via API Externa.
+              </p>
+            </aside>
+          </div>
+        </div>
+      </form>
+    </main>
+  </body>
+</html>

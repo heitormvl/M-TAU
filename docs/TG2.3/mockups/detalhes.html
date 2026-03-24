@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Detalhes do Produto - Cadeira de Rodas Monobloco | M-TAU</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    />
+
+    <style>
+      /* Variáveis de Alto Contraste e Acessibilidade (Mesma Identidade Visual) */
+      :root {
+        --primary-color: #004b87;
+        --secondary-color: #f8f9fa;
+        --text-color: #212529;
+        --focus-color: #ffc107;
+        --success-color: #198754;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--text-color);
+        background-color: var(--secondary-color);
+      }
+
+      /* Hit Targets (Áreas de Clique) - Mínimo 44x44px */
+      .hit-target {
+        min-height: 48px;
+        min-width: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Foco Acessível para Navegação via Teclado */
+      a:focus,
+      button:focus,
+      input:focus,
+      select:focus {
+        outline: 4px solid var(--focus-color) !important;
+        outline-offset: 2px !important;
+        box-shadow: none !important;
+      }
+
+      /* Estilização Customizada */
+      .navbar-custom {
+        background-color: var(--primary-color);
+      }
+
+      .navbar-custom .navbar-brand,
+      .navbar-custom .nav-link {
+        color: #ffffff;
+        font-weight: 600;
+      }
+
+      .product-image-container {
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+      }
+
+      .product-image-container img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 4px;
+      }
+
+      .price-tag {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+      }
+
+      .specs-table th {
+        background-color: #e9ecef;
+        width: 40%;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <nav
+        class="navbar navbar-expand navbar-custom py-3"
+        aria-label="Navegação Principal"
+      >
+        <div class="container">
+          <a
+            class="navbar-brand hit-target"
+            href="#"
+            aria-label="Ir para a página inicial do M-TAU"
+          >
+            <i class="fa-solid fa-wheelchair-move me-2" aria-hidden="true"></i>
+            M-TAU
+          </a>
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a
+                class="nav-link hit-target px-3"
+                href="#"
+                aria-label="Acessar sua conta"
+                >Entrar</a
+              >
+            </li>
+            <li class="nav-item">
+              <a
+                class="btn btn-light text-primary fw-bold hit-target px-4 ms-2"
+                href="#"
+                aria-label="Criar um novo anúncio"
+                >Anunciar</a
+              >
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </header>
+
+    <main id="conteudo-principal" class="container py-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="#" class="hit-target px-2">Início</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="#" class="hit-target px-2">Física / Motora</a>
+          </li>
+          <li class="breadcrumb-item active pt-2" aria-current="page">
+            Cadeiras de Rodas
+          </li>
+        </ol>
+      </nav>
+
+      <article class="row g-5 mt-2">
+        <div class="col-12 col-lg-6">
+          <div class="product-image-container">
+            <img
+              src="./img/Cadeira.png"
+              alt="Fotografia lateral de uma cadeira de rodas monobloco preta, com rodas de fibra de carbono e encosto baixo."
+              class="img-fluid"
+            />
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+          <span class="badge bg-secondary mb-2 fs-6">Seminovo (1-3 anos)</span>
+          <h1 class="h2 fw-bold text-dark">
+            Cadeira de Rodas Monobloco Alumínio Aeronáutico
+          </h1>
+
+          <p class="text-muted mb-4">
+            <i class="fa-solid fa-location-dot me-1" aria-hidden="true"></i> São
+            Paulo, SP
+          </p>
+
+          <div class="mb-4">
+            <span class="price-tag">R$ 2.450,00</span>
+            <p class="text-success fw-bold">
+              <i class="fa-solid fa-shield-halved me-1" aria-hidden="true"></i>
+              Compra Segura M-TAU
+            </p>
+          </div>
+
+          <div class="d-grid gap-3 mb-5">
+            <button
+              class="btn btn-primary btn-lg hit-target fw-bold"
+              aria-label="Comprar este item agora"
+            >
+              <i class="fa-solid fa-cart-shopping me-2" aria-hidden="true"></i>
+              Comprar Agora
+            </button>
+            <button
+              class="btn btn-outline-primary btn-lg hit-target fw-bold"
+              aria-label="Abrir chat com o vendedor Clínica Reabilitar"
+            >
+              <i class="fa-regular fa-comments me-2" aria-hidden="true"></i>
+              Falar com o Vendedor
+            </button>
+          </div>
+
+          <div class="card bg-white border-0 shadow-sm p-3">
+            <div class="d-flex align-items-center">
+              <div class="bg-light rounded-circle p-3 me-3">
+                <i
+                  class="fa-solid fa-store fs-4 text-primary"
+                  aria-hidden="true"
+                ></i>
+              </div>
+              <div>
+                <h2 class="h6 mb-0 fw-bold">Clínica Reabilitar (PJ)</h2>
+                <p class="text-muted small mb-0">
+                  Vendedor verificado • Avaliação: 4.8/5.0
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <section
+        class="mt-5 bg-white p-4 rounded border shadow-sm"
+        aria-labelledby="titulo-especificacoes"
+      >
+        <h2
+          id="titulo-especificacoes"
+          class="h4 fw-bold mb-4 border-bottom pb-2"
+        >
+          Especificações Técnicas
+        </h2>
+
+        <div class="row">
+          <div class="col-12 col-md-8">
+            <table class="table table-striped table-bordered specs-table">
+              <tbody>
+                <tr>
+                  <th scope="row">Categoria</th>
+                  <td>Deficiência Física / Motora</td>
+                </tr>
+                <tr>
+                  <th scope="row">Peso Suportado</th>
+                  <td>Até 120 kg</td>
+                </tr>
+                <tr>
+                  <th scope="row">Largura do Assento</th>
+                  <td>40 cm</td>
+                </tr>
+                <tr>
+                  <th scope="row">Cambagem (Inclinação das rodas)</th>
+                  <td>3 graus</td>
+                </tr>
+                <tr>
+                  <th scope="row">Material do Chassi</th>
+                  <td>Alumínio Aeronáutico</td>
+                </tr>
+                <tr>
+                  <th scope="row">Tempo de Uso</th>
+                  <td>Entre 1 e 3 anos</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <div class="p-3 bg-light rounded h-100">
+              <h3 class="h6 fw-bold">
+                <i
+                  class="fa-solid fa-circle-info me-2 text-primary"
+                  aria-hidden="true"
+                ></i>
+                Descrição do Vendedor
+              </h3>
+              <p class="small text-muted">
+                Equipamento em excelente estado, utilizado apenas em ambiente
+                interno (clínica). Almofada antiescaras inclusa. Estamos
+                renovando o inventário da clínica e repassando equipamentos
+                seminovos.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bg-dark text-white py-4 mt-5 text-center">
+      <div class="container">
+        <p class="mb-0">
+          &copy; 2026 M-TAU. Todos os direitos
+          reservados.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
