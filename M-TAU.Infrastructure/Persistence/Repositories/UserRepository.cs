@@ -1,0 +1,33 @@
+using M_TAU.Domain.Identity;
+using M_TAU.Domain.Repositories;
+using M_TAU.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+namespace M_TAU.Infrastructure.Persistence.Repositories;
+
+public sealed class UserRepository(AppDbContext context) : IUserRepository
+{
+    public async Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => await context.Users.FindAsync([id], cancellationToken);
+
+    public async Task<IReadOnlyCollection<User>> ListAsync(CancellationToken cancellationToken = default)
+        => await context.Users.ToListAsync(cancellationToken);
+
+    public async Task AddAsync(User entity, CancellationToken cancellationToken = default)
+        => await context.Users.AddAsync(entity, cancellationToken);
+
+    public Task UpdateAsync(User entity, CancellationToken cancellationToken = default)
+    {
+        context.Users.Update(entity);
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync(User entity, CancellationToken cancellationToken = default)
+    {
+        context.Users.Remove(entity);
+        return Task.CompletedTask;
+    }
+
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+        => await context.Users.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+}

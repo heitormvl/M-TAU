@@ -1,6 +1,150 @@
 @M_TAU.API_HostAddress = http://localhost:5144
 
-GET {{M_TAU.API_HostAddress}}/weatherforecast/
-Accept: application/json
+# ============================================================
+# AUTH
+# ============================================================
+
+### 1. Criar usuário (não requer autenticação)
+POST {{M_TAU.API_HostAddress}}/api/users
+Content-Type: application/json
+
+{
+  "name": "João Silva",
+  "email": "joao@email.com",
+  "password": "Senha@1234",
+  "role": 1
+}
+
+###
+
+### 2. Login — copie o token retornado para @token abaixo
+POST {{M_TAU.API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "joao@email.com",
+  "password": "Senha@1234"
+}
+
+###
+
+@token = COLE_O_TOKEN_AQUI
+
+# ============================================================
+# PRODUCTS
+# ============================================================
+
+### 3. Criar produto
+POST {{M_TAU.API_HostAddress}}/api/products
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Cadeira de Rodas Manual",
+  "price": 1500.00,
+  "sellerId": "00000000-0000-0000-0000-000000000001",
+  "description": "Cadeira leve e dobrável",
+  "technicalSpec": {
+    "category": 0,
+    "measures": "50x40x90cm",
+    "weightCapacity": 120.0,
+    "usageTime": "8h/dia"
+  }
+}
+
+###
+
+### 4. Listar produtos
+GET {{M_TAU.API_HostAddress}}/api/products
+Authorization: Bearer {{token}}
+
+###
+
+### 5. Buscar produto por ID
+GET {{M_TAU.API_HostAddress}}/api/products/COLE_GUID_PRODUTO
+Authorization: Bearer {{token}}
+
+###
+
+# ============================================================
+# ORDERS
+# ============================================================
+
+### 6. Criar pedido
+POST {{M_TAU.API_HostAddress}}/api/orders
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "buyerId": "00000000-0000-0000-0000-000000000002",
+  "productId": "COLE_GUID_PRODUTO",
+  "totalAmount": 1500.00
+}
+
+###
+
+### 7. Listar pedidos
+GET {{M_TAU.API_HostAddress}}/api/orders
+Authorization: Bearer {{token}}
+
+###
+
+# ============================================================
+# CHAT
+# ============================================================
+
+### 8. Criar sessão de chat
+POST {{M_TAU.API_HostAddress}}/api/chat-sessions
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "buyerId": "00000000-0000-0000-0000-000000000002",
+  "sellerId": "00000000-0000-0000-0000-000000000001",
+  "productId": "COLE_GUID_PRODUTO"
+}
+
+###
+
+### 9. Enviar mensagem
+POST {{M_TAU.API_HostAddress}}/api/chat-sessions/COLE_GUID_SESSION/messages
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "chatSessionId": "COLE_GUID_SESSION",
+  "senderId": "00000000-0000-0000-0000-000000000002",
+  "content": "Olá, o produto ainda está disponível?"
+}
+
+###
+
+### 10. Listar mensagens da sessão
+GET {{M_TAU.API_HostAddress}}/api/messages?sessionId=COLE_GUID_SESSION
+Authorization: Bearer {{token}}
+
+###
+
+# ============================================================
+# FEEDBACK
+# ============================================================
+
+### 11. Criar feedback
+POST {{M_TAU.API_HostAddress}}/api/feedbacks
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "rating": 5,
+  "fromUserId": "00000000-0000-0000-0000-000000000002",
+  "comment": "Produto excelente, entrega rápida!",
+  "orderId": "COLE_GUID_PEDIDO"
+}
+
+###
+
+### 12. Listar feedbacks
+GET {{M_TAU.API_HostAddress}}/api/feedbacks
+Authorization: Bearer {{token}}
 
 ###
