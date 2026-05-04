@@ -21,6 +21,8 @@ public sealed class ChatSessionRepository(AppDbContext context) : IChatSessionRe
 
     public async Task UpdateAsync(ChatSession entity, CancellationToken cancellationToken = default)
     {
+        if (context.Entry(entity).State == EntityState.Detached)
+            context.Entry(entity).State = EntityState.Modified;
         foreach (var message in entity.Messages)
         {
             if (context.Entry(message).State == EntityState.Detached)

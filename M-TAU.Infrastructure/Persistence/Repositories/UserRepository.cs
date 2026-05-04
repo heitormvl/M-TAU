@@ -21,6 +21,8 @@ public sealed class UserRepository(AppDbContext context) : IUserRepository
 
     public async Task UpdateAsync(User entity, CancellationToken cancellationToken = default)
     {
+        if (context.Entry(entity).State == EntityState.Detached)
+            context.Entry(entity).State = EntityState.Modified;
         await context.SaveChangesAsync(cancellationToken);
     }
 

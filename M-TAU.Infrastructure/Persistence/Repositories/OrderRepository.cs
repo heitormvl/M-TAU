@@ -21,6 +21,8 @@ public sealed class OrderRepository(AppDbContext context) : IOrderRepository
 
     public async Task UpdateAsync(Order entity, CancellationToken cancellationToken = default)
     {
+        if (context.Entry(entity).State == EntityState.Detached)
+            context.Entry(entity).State = EntityState.Modified;
         await context.SaveChangesAsync(cancellationToken);
     }
 

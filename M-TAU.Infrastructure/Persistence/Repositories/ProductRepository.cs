@@ -27,6 +27,8 @@ public sealed class ProductRepository(AppDbContext context) : IProductRepository
 
     public async Task UpdateAsync(Product entity, CancellationToken cancellationToken = default)
     {
+        if (context.Entry(entity).State == EntityState.Detached)
+            context.Entry(entity).State = EntityState.Modified;
         foreach (var photo in entity.Photos)
         {
             if (context.Entry(photo).State == EntityState.Detached)
