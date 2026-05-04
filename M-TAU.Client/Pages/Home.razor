@@ -93,7 +93,7 @@
         try
         {
             _recentProducts = await Http.GetFromJsonAsync<IReadOnlyCollection<ProductResponseDto>>(
-                "api/products?pageSize=8") ?? [];
+                "api/products?pageNumber=1&pageSize=8") ?? [];
         }
         catch
         {

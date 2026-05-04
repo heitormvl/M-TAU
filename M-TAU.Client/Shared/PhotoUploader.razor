@@ -45,8 +45,10 @@
         {
             try
             {
-                var buf = new byte[Math.Min(file.Size, 2 * 1024 * 1024)];
-                await file.OpenReadStream(2 * 1024 * 1024).ReadAsync(buf);
+                var maxBytes = 2 * 1024 * 1024;
+                var buf = new byte[Math.Min(file.Size, maxBytes)];
+                var stream = file.OpenReadStream(maxBytes);
+                await stream.ReadExactlyAsync(buf, 0, buf.Length);
                 var b64 = Convert.ToBase64String(buf);
                 _previews.Add(($"data:{file.ContentType};base64,{b64}", file.Name));
             }
@@ -58,5 +60,10 @@
         await FilesChanged.InvokeAsync(files);
     }
 
-    private void RemovePreview(string url) => _previews.RemoveAll(p => p.Url == url);
+    private async Task RemovePreview(string url)
+    {
+        _previews.RemoveAll(p => p.Url == url);
+        // Notify parent that the file list has been cleared (re-upload required)
+        await FilesChanged.InvokeAsync(Array.Empty<IBrowserFile>());
+    }
 }

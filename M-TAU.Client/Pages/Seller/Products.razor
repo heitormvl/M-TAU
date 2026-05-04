@@ -91,9 +91,16 @@ else
 
     private async Task ConfirmDeleteAsync(ProductResponseDto product)
     {
-        await Http.DeleteAsync($"api/products/{product.Id}");
-        Snackbar.Add($"Anúncio \"{product.Title}\" excluído.", Severity.Success);
-        await LoadAsync();
+        var response = await Http.DeleteAsync($"api/products/{product.Id}");
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add($"Anúncio \"{product.Title}\" excluído.", Severity.Success);
+            await LoadAsync();
+        }
+        else
+        {
+            Snackbar.Add("Erro ao excluir anúncio.", Severity.Error);
+        }
     }
 
     private async Task OnPageChanged(int page)

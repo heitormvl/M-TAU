@@ -13,6 +13,7 @@
     <MudTextField @bind-Value="_search" Placeholder="Buscar produtos..." Variant="Variant.Outlined"
                   Margin="Margin.Dense" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search"
                   OnAdornmentClick="GoSearch" Class="nav-search" aria-label="Campo de busca"
+                  OnKeyDown="HandleSearchKey"
                   Style="background:white; border-radius:4px; max-width:320px;" />
 
     <MudSpacer />
@@ -60,5 +61,11 @@
     {
         if (!string.IsNullOrWhiteSpace(_search))
             Nav.NavigateTo($"/catalog?q={Uri.EscapeDataString(_search)}");
+    }
+
+    private void HandleSearchKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            GoSearch();
     }
 }
