@@ -1,4 +1,5 @@
 using M_TAU.Application.Dtos.Identity;
+using M_TAU.Domain.Identity;
 
 namespace M_TAU.Application.Services;
 
@@ -15,4 +16,6 @@ public interface IUserService
     Task UpdateEmailAsync(Guid id, string email, CancellationToken cancellationToken = default);
 
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<User?> ValidateCredentialsAsync(string email, string password, CancellationToken cancellationToken = default);
 }

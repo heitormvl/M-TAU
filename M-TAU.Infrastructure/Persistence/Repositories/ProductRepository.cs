@@ -20,18 +20,27 @@ public sealed class ProductRepository(AppDbContext context) : IProductRepository
             .ToListAsync(cancellationToken);
 
     public async Task AddAsync(Product entity, CancellationToken cancellationToken = default)
-        => await context.Products.AddAsync(entity, cancellationToken);
-
-    public Task UpdateAsync(Product entity, CancellationToken cancellationToken = default)
     {
-        context.Products.Update(entity);
-        return Task.CompletedTask;
+        await context.Products.AddAsync(entity, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
     }
 
-    public Task DeleteAsync(Product entity, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(Product entity, CancellationToken cancellationToken = default)
+    {
+        if (context.Entry(entity).State == EntityState.Detached)
+            context.Entry(entity).State = EntityState.Modified;
+        foreach (var photo in entity.Photos)
+        {
+            if (context.Entry(photo).State == EntityState.Detached)
+                context.Entry(photo).State = EntityState.Added;
+        }
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(Product entity, CancellationToken cancellationToken = default)
     {
         context.Products.Remove(entity);
-        return Task.CompletedTask;
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<Product>> ListBySellerAsync(Guid sellerId, CancellationToken cancellationToken = default)

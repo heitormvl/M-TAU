@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -9,7 +10,7 @@ namespace M_TAU.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public sealed class AuthController(UserService userService, IConfiguration configuration) : ControllerBase
+public sealed class AuthController(IUserService userService, IConfiguration configuration) : ControllerBase
 {
     [HttpPost("login")]
     public async Task<IActionResult> Login(
@@ -42,4 +43,7 @@ public sealed class AuthController(UserService userService, IConfiguration confi
     }
 }
 
-public record LoginRequest(string Email, string Password);
+public record LoginRequest(
+    [Required] string Email,
+    [Required] string Password);
+

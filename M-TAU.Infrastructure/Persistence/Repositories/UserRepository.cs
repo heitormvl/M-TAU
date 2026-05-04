@@ -14,18 +14,22 @@ public sealed class UserRepository(AppDbContext context) : IUserRepository
         => await context.Users.ToListAsync(cancellationToken);
 
     public async Task AddAsync(User entity, CancellationToken cancellationToken = default)
-        => await context.Users.AddAsync(entity, cancellationToken);
-
-    public Task UpdateAsync(User entity, CancellationToken cancellationToken = default)
     {
-        context.Users.Update(entity);
-        return Task.CompletedTask;
+        await context.Users.AddAsync(entity, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
     }
 
-    public Task DeleteAsync(User entity, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(User entity, CancellationToken cancellationToken = default)
+    {
+        if (context.Entry(entity).State == EntityState.Detached)
+            context.Entry(entity).State = EntityState.Modified;
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(User entity, CancellationToken cancellationToken = default)
     {
         context.Users.Remove(entity);
-        return Task.CompletedTask;
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)

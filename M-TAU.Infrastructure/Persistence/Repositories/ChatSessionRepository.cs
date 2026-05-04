@@ -14,18 +14,27 @@ public sealed class ChatSessionRepository(AppDbContext context) : IChatSessionRe
         => await context.ChatSessions.ToListAsync(cancellationToken);
 
     public async Task AddAsync(ChatSession entity, CancellationToken cancellationToken = default)
-        => await context.ChatSessions.AddAsync(entity, cancellationToken);
-
-    public Task UpdateAsync(ChatSession entity, CancellationToken cancellationToken = default)
     {
-        context.ChatSessions.Update(entity);
-        return Task.CompletedTask;
+        await context.ChatSessions.AddAsync(entity, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
     }
 
-    public Task DeleteAsync(ChatSession entity, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(ChatSession entity, CancellationToken cancellationToken = default)
+    {
+        if (context.Entry(entity).State == EntityState.Detached)
+            context.Entry(entity).State = EntityState.Modified;
+        foreach (var message in entity.Messages)
+        {
+            if (context.Entry(message).State == EntityState.Detached)
+                context.Entry(message).State = EntityState.Added;
+        }
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(ChatSession entity, CancellationToken cancellationToken = default)
     {
         context.ChatSessions.Remove(entity);
-        return Task.CompletedTask;
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<ChatSession>> ListByParticipantAsync(Guid userId, CancellationToken cancellationToken = default)

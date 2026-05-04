@@ -14,18 +14,22 @@ public sealed class FeedbackRepository(AppDbContext context) : IFeedbackReposito
         => await context.Feedbacks.ToListAsync(cancellationToken);
 
     public async Task AddAsync(Feedback entity, CancellationToken cancellationToken = default)
-        => await context.Feedbacks.AddAsync(entity, cancellationToken);
-
-    public Task UpdateAsync(Feedback entity, CancellationToken cancellationToken = default)
     {
-        context.Feedbacks.Update(entity);
-        return Task.CompletedTask;
+        await context.Feedbacks.AddAsync(entity, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
     }
 
-    public Task DeleteAsync(Feedback entity, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(Feedback entity, CancellationToken cancellationToken = default)
+    {
+        if (context.Entry(entity).State == EntityState.Detached)
+            context.Entry(entity).State = EntityState.Modified;
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(Feedback entity, CancellationToken cancellationToken = default)
     {
         context.Feedbacks.Remove(entity);
-        return Task.CompletedTask;
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<Feedback>> ListByOrderIdAsync(Guid orderId, CancellationToken cancellationToken = default)
