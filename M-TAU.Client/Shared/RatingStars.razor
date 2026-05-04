@@ -1,0 +1,31 @@
+<div class="d-flex align-center gap-1" role="group" aria-label="Avaliação: @Value de 5 estrelas">
+    @for (int i = 1; i <= 5; i++)
+    {
+        var star = i;
+        <MudIconButton Icon="@(star <= Value ? Icons.Material.Filled.Star : Icons.Material.Outlined.StarBorder)"
+                       Color="Color.Warning"
+                       Size="Size.Small"
+                       Disabled="@ReadOnly"
+                       OnClick="@(() => SetValue(star))"
+                       aria-label="@($"{star} estrela{(star > 1 ? "s" : "")}")" />
+    }
+    @if (!ReadOnly)
+    {
+        <MudText Typo="Typo.caption" Class="ml-1">@Value / 5</MudText>
+    }
+</div>
+
+@code {
+    [Parameter] public int Value { get; set; }
+    [Parameter] public EventCallback<int> ValueChanged { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+
+    private async Task SetValue(int v)
+    {
+        if (!ReadOnly)
+        {
+            Value = v;
+            await ValueChanged.InvokeAsync(v);
+        }
+    }
+}

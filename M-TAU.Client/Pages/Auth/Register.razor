@@ -1,0 +1,120 @@
+@page "/register"
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>Cadastrar — M-TAU</PageTitle>
+
+<MudGrid Justify="Justify.Center">
+    <MudItem xs="12" sm="9" md="6">
+        <MudCard Elevation="4" Class="pa-4">
+            <MudCardHeader>
+                <MudText Typo="Typo.h5">Criar conta</MudText>
+            </MudCardHeader>
+            <MudCardContent>
+                <EditForm Model="_model" OnValidSubmit="SubmitAsync">
+                    <DataAnnotationsValidator />
+                    <MudStack Spacing="3">
+                        <MudText Typo="Typo.subtitle2">Tipo de conta</MudText>
+                        <MudRadioGroup T="UserType" @bind-Value="_model.Role" aria-label="Tipo de conta">
+                            <MudRadio T="UserType" Value="UserType.Buyer" Color="Color.Primary">
+                                Comprador
+                            </MudRadio>
+                            <MudRadio T="UserType" Value="UserType.Seller" Color="Color.Secondary">
+                                Vendedor
+                            </MudRadio>
+                        </MudRadioGroup>
+
+                        <MudTextField @bind-Value="_model.Name" Label="Nome completo" Variant="Variant.Outlined"
+                                      autocomplete="name"
+                                      For="@(() => _model.Name)"
+                                      aria-label="Nome completo" />
+                        <MudTextField @bind-Value="_model.Email" Label="E-mail" Variant="Variant.Outlined"
+                                      InputType="InputType.Email" autocomplete="email"
+                                      For="@(() => _model.Email)"
+                                      aria-label="Endereço de e-mail" />
+                        <MudTextField @bind-Value="_model.Password" Label="Senha" Variant="Variant.Outlined"
+                                      InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                      Adornment="Adornment.End"
+                                      AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                      OnAdornmentClick="@(() => _showPassword = !_showPassword)"
+                                      autocomplete="new-password"
+                                      HelperText="Mínimo 8 caracteres"
+                                      For="@(() => _model.Password)"
+                                      aria-label="Senha" />
+
+                        <MudDivider />
+                        <MudText Typo="Typo.subtitle2">Localização (opcional)</MudText>
+                        <CepLookup @bind-Cep="_cep" @bind-City="_city" @bind-Neighborhood="_neighborhood" />
+
+                        <ValidationSummary />
+                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                                   Color="Color.Primary" FullWidth="true"
+                                   Disabled="_submitting"
+                                   aria-label="Criar conta">
+                            @(_submitting ? "Criando conta…" : "Criar conta")
+                        </MudButton>
+                        <MudText Align="Align.Center" Typo="Typo.body2">
+                            Já tem conta?
+                            <MudLink Href="/login">Entrar</MudLink>
+                        </MudText>
+                    </MudStack>
+                </EditForm>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private readonly RegisterModel _model = new();
+    private bool _showPassword;
+    private bool _submitting;
+    private string _cep = string.Empty;
+    private string _city = string.Empty;
+    private string _neighborhood = string.Empty;
+
+    private async Task SubmitAsync()
+    {
+        _submitting = true;
+        try
+        {
+            var dto = new UserCreateDto(_model.Name, _model.Email, _model.Password, _model.Role);
+            var response = await Http.PostAsJsonAsync("api/users", dto);
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Conta criada com sucesso! Faça login.", Severity.Success);
+                Nav.NavigateTo("/login");
+            }
+            else
+            {
+                var msg = await response.Content.ReadAsStringAsync();
+                Snackbar.Add($"Erro: {msg}", Severity.Error);
+            }
+        }
+        catch
+        {
+            Snackbar.Add("Erro ao conectar ao servidor.", Severity.Error);
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private sealed class RegisterModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Nome é obrigatório.")]
+        [System.ComponentModel.DataAnnotations.StringLength(120, MinimumLength = 2)]
+        public string Name { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "E-mail é obrigatório.")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "E-mail inválido.")]
+        public string Email { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Senha é obrigatória.")]
+        [System.ComponentModel.DataAnnotations.StringLength(256, MinimumLength = 8, ErrorMessage = "Mínimo 8 caracteres.")]
+        public string Password { get; set; } = string.Empty;
+
+        public UserType Role { get; set; } = UserType.Buyer;
+    }
+}

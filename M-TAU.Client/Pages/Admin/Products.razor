@@ -1,0 +1,138 @@
+@page "/admin/products"
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<PageTitle>Moderação de Produtos — M-TAU Admin</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Moderação de Produtos</MudText>
+
+<MudStack Row="true" Spacing="2" Class="mb-4">
+    <MudTextField @bind-Value="_search" Label="Buscar por título" Variant="Variant.Outlined"
+                  Margin="Margin.Dense" Style="max-width:320px;"
+                  Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search"
+                  OnAdornmentClick="LoadAsync"
+                  aria-label="Buscar produto por título" />
+    <MudSelect T="ProductStatus?" @bind-Value="_statusFilter" Label="Status" Variant="Variant.Outlined"
+               Margin="Margin.Dense" Clearable="true" Style="max-width:160px;"
+               aria-label="Filtrar por status do produto">
+        @foreach (ProductStatus s in Enum.GetValues<ProductStatus>())
+        {
+            <MudSelectItem T="ProductStatus?" Value="@((ProductStatus?)s)">@s.ToString()</MudSelectItem>
+        }
+    </MudSelect>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="LoadAsync"
+               aria-label="Aplicar filtro">Filtrar</MudButton>
+</MudStack>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_products is null || _products.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">Nenhum produto encontrado.</MudAlert>
+}
+else
+{
+    <MudTable Items="_products" Hover="true" Dense="false" Striped="true"
+              aria-label="Tabela de moderação de produtos">
+        <HeaderContent>
+            <MudTh>Título</MudTh>
+            <MudTh>Preço</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Categoria</MudTh>
+            <MudTh>Ações</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Título">@context.Title</MudTd>
+            <MudTd DataLabel="Preço">@context.Price.ToString("C2")</MudTd>
+            <MudTd DataLabel="Status"><StatusBadge Status="@context.Status.ToString()" /></MudTd>
+            <MudTd DataLabel="Categoria">
+                @(context.TechnicalSpec?.Category.ToString() ?? "—")
+            </MudTd>
+            <MudTd DataLabel="Ações">
+                @if (context.Status != ProductStatus.Active)
+                {
+                    <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Success"
+                               OnClick="@(() => ChangeStatusAsync(context, ProductStatus.Active))"
+                               aria-label="@($"Aprovar {context.Title}")">
+                        Aprovar
+                    </MudButton>
+                }
+                @if (context.Status == ProductStatus.Active)
+                {
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Warning" Class="ml-1"
+                               OnClick="@(() => ChangeStatusAsync(context, ProductStatus.Paused))"
+                               aria-label="@($"Pausar {context.Title}")">
+                        Pausar
+                    </MudButton>
+                }
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error" Class="ml-1"
+                           OnClick="@(() => RemoveAsync(context))"
+                           aria-label="@($"Remover {context.Title}")">
+                    Remover
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+    <Pagination CurrentPage="_currentPage" TotalPages="_totalPages" PageChanged="OnPageChanged" />
+}
+
+@code {
+    private IReadOnlyCollection<ProductResponseDto>? _products;
+    private string _search = string.Empty;
+    private ProductStatus? _statusFilter;
+    private bool _loading = true;
+    private int _currentPage = 1;
+    private int _totalPages = 1;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            var qs = $"api/products?pageNumber={_currentPage}&pageSize=20";
+            if (!string.IsNullOrWhiteSpace(_search)) qs += $"&title={Uri.EscapeDataString(_search)}";
+            if (_statusFilter.HasValue) qs += $"&status={_statusFilter}";
+            _products = await Http.GetFromJsonAsync<IReadOnlyCollection<ProductResponseDto>>(qs) ?? [];
+        }
+        catch { _products = []; }
+        finally { _loading = false; }
+    }
+
+    private async Task ChangeStatusAsync(ProductResponseDto product, ProductStatus newStatus)
+    {
+        var response = await Http.PatchAsJsonAsync($"api/products/{product.Id}/status", new { status = newStatus });
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Status atualizado.", Severity.Success);
+            await LoadAsync();
+        }
+        else
+        {
+            Snackbar.Add("Erro ao atualizar status.", Severity.Error);
+        }
+    }
+
+    private async Task RemoveAsync(ProductResponseDto product)
+    {
+        var response = await Http.DeleteAsync($"api/products/{product.Id}");
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add($"\"{product.Title}\" removido.", Severity.Success);
+            await LoadAsync();
+        }
+        else
+        {
+            Snackbar.Add("Erro ao remover produto.", Severity.Error);
+        }
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadAsync();
+    }
+}

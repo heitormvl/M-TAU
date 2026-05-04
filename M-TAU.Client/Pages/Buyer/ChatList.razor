@@ -1,0 +1,59 @@
+@page "/buyer/chat"
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<PageTitle>Minhas Negociações — M-TAU</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Minhas Negociações</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_sessions is null || _sessions.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">Você não tem negociações em andamento.</MudAlert>
+}
+else
+{
+    <MudList T="ChatSessionResponseDto" Dense="false" aria-label="Lista de negociações">
+        @foreach (var session in _sessions)
+        {
+            var lastMsg = session.Messages?.OrderByDescending(m => m.SentAt).FirstOrDefault();
+            <MudListItem OnClick="@(() => Nav.NavigateTo($"/buyer/chat/{session.Id}"))"
+                         Icon="@Icons.Material.Filled.Chat"
+                         aria-label="@($"Negociação com vendedor, produto {session.ProductId}")">
+                <MudStack>
+                    <MudText Typo="Typo.subtitle2">Produto: @session.ProductId</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @(lastMsg?.Content ?? "Sem mensagens ainda.")
+                    </MudText>
+                </MudStack>
+            </MudListItem>
+            <MudDivider />
+        }
+    </MudList>
+}
+
+@code {
+    private IReadOnlyCollection<ChatSessionResponseDto>? _sessions;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // TODO: filtrar pelo buyerId autenticado
+            _sessions = await Http.GetFromJsonAsync<IReadOnlyCollection<ChatSessionResponseDto>>(
+                "api/chatsessions") ?? [];
+        }
+        catch
+        {
+            _sessions = [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

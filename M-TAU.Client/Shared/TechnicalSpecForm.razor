@@ -1,0 +1,75 @@
+<MudGrid>
+    @if (Category != DisabilityCategory.Visual)
+    {
+        <MudItem xs="12">
+            <MudTextField @bind-Value="Measures"
+                          Label="Medidas (ex: 45x42x95 cm)"
+                          Variant="Variant.Outlined"
+                          HelperText="Largura x Profundidade x Altura"
+                          aria-label="Medidas do produto" />
+        </MudItem>
+    }
+    <MudItem xs="12" sm="6">
+        <MudNumericField T="double?" @bind-Value="WeightCapacity"
+                         Label="Capacidade de peso (kg)"
+                         Variant="Variant.Outlined"
+                         Min="0"
+                         aria-label="Capacidade de peso em quilogramas" />
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudSelect T="string?" @bind-Value="UsageTime"
+                   Label="Tempo de uso"
+                   Variant="Variant.Outlined"
+                   aria-label="Tempo de uso do equipamento">
+            <MudSelectItem T="string?" Value="@("Menos de 1 ano")">Menos de 1 ano</MudSelectItem>
+            <MudSelectItem T="string?" Value="@("1-3 anos")">1-3 anos</MudSelectItem>
+            <MudSelectItem T="string?" Value="@("3-5 anos")">3-5 anos</MudSelectItem>
+            <MudSelectItem T="string?" Value="@("Mais de 5 anos")">Mais de 5 anos</MudSelectItem>
+        </MudSelect>
+    </MudItem>
+    @if (Category == DisabilityCategory.Physical)
+    {
+        <MudItem xs="12">
+            <MudText Typo="Typo.caption" Color="Color.Info">
+                <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" /> Física: inclua cambagem, tipo de aro e material do chassis nos detalhes.
+            </MudText>
+        </MudItem>
+    }
+    @if (Category == DisabilityCategory.Visual)
+    {
+        <MudItem xs="12">
+            <MudText Typo="Typo.caption" Color="Color.Info">
+                <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" /> Visual: descreva compatibilidade com leitores de tela e interfaces de voz.
+            </MudText>
+        </MudItem>
+    }
+    @if (Category == DisabilityCategory.Auditory)
+    {
+        <MudItem xs="12">
+            <MudText Typo="Typo.caption" Color="Color.Info">
+                <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" /> Auditiva: informe frequência, ganho e modelo do processador de som.
+            </MudText>
+        </MudItem>
+    }
+    @if (Category == DisabilityCategory.Cognitive)
+    {
+        <MudItem xs="12">
+            <MudText Typo="Typo.caption" Color="Color.Info">
+                <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" /> Cognitiva: descreva nível de complexidade de operação e recursos de acessibilidade.
+            </MudText>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    [Parameter, EditorRequired] public DisabilityCategory Category { get; set; }
+
+    [Parameter] public string? Measures { get; set; }
+    [Parameter] public EventCallback<string?> MeasuresChanged { get; set; }
+
+    [Parameter] public double? WeightCapacity { get; set; }
+    [Parameter] public EventCallback<double?> WeightCapacityChanged { get; set; }
+
+    [Parameter] public string? UsageTime { get; set; }
+    [Parameter] public EventCallback<string?> UsageTimeChanged { get; set; }
+}

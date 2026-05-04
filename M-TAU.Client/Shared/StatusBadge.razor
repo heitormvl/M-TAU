@@ -1,0 +1,25 @@
+<MudChip T="string" Size="Size.Small" Color="@BadgeColor" Variant="Variant.Filled">@Label</MudChip>
+
+@code {
+    [Parameter, EditorRequired] public string Status { get; set; } = string.Empty;
+
+    private string Label => Status switch
+    {
+        "Active"    => "Ativo",
+        "Paused"    => "Pausado",
+        "Sold"      => "Vendido",
+        "Pending"   => "Pendente",
+        "Confirmed" => "Confirmado",
+        "Cancelled" => "Cancelado",
+        "Completed" => "Concluído",
+        _           => Status
+    };
+
+    private Color BadgeColor => Status switch
+    {
+        "Active" or "Confirmed" or "Completed" => Color.Success,
+        "Paused" or "Pending"                  => Color.Warning,
+        "Sold" or "Cancelled"                  => Color.Error,
+        _                                      => Color.Default
+    };
+}

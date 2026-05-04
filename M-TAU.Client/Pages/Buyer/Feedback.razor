@@ -1,0 +1,103 @@
+@page "/buyer/feedback/{OrderId:guid}"
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>Avaliar Negociação — M-TAU</PageTitle>
+
+<MudGrid Justify="Justify.Center">
+    <MudItem xs="12" sm="8" md="6">
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else if (!_isEligible)
+        {
+            <MudAlert Severity="Severity.Warning">
+                A avaliação só está disponível após o pedido ser concluído.
+            </MudAlert>
+        }
+        else
+        {
+            <MudCard Elevation="4" Class="pa-4">
+                <MudCardHeader>
+                    <MudText Typo="Typo.h5">Avaliar negociação</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    <EditForm Model="_form" OnValidSubmit="SubmitAsync">
+                        <DataAnnotationsValidator />
+                        <MudStack Spacing="3">
+                            <MudText Typo="Typo.subtitle2">Nota</MudText>
+                            <RatingStars @bind-Value="_form.Rating" aria-label="Selecionar nota de 1 a 5" />
+
+                            <MudTextField @bind-Value="_form.Comment" Label="Comentário (opcional)"
+                                          Variant="Variant.Outlined" Lines="4"
+                                          MaxLength="1000"
+                                          aria-label="Comentário sobre a negociação"
+                                          Counter="1000" />
+                            <ValidationSummary />
+                            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                                       Color="Color.Primary" FullWidth="true"
+                                       Disabled="_submitting"
+                                       aria-label="Enviar avaliação">
+                                @(_submitting ? "Enviando…" : "Enviar avaliação")
+                            </MudButton>
+                        </MudStack>
+                    </EditForm>
+                </MudCardContent>
+            </MudCard>
+        }
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public Guid OrderId { get; set; }
+
+    private bool _loading = true;
+    private bool _isEligible;
+    private bool _submitting;
+    private readonly FeedbackForm _form = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var order = await Http.GetFromJsonAsync<OrderResponseDto>($"api/orders/{OrderId}");
+            _isEligible = order?.Status == OrderStatus.Completed;
+        }
+        catch { }
+        finally { _loading = false; }
+    }
+
+    private async Task SubmitAsync()
+    {
+        _submitting = true;
+        try
+        {
+            var dto = new FeedbackCreateDto(_form.Rating, Guid.Empty /* currentUserId */, _form.Comment, OrderId);
+            var response = await Http.PostAsJsonAsync("api/feedbacks", dto);
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Avaliação enviada. Obrigado!", Severity.Success);
+                Nav.NavigateTo($"/buyer/orders/{OrderId}");
+            }
+            else
+            {
+                Snackbar.Add("Erro ao enviar avaliação.", Severity.Error);
+            }
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private sealed class FeedbackForm
+    {
+        [System.ComponentModel.DataAnnotations.Range(1, 5, ErrorMessage = "Selecione uma nota de 1 a 5.")]
+        public int Rating { get; set; } = 5;
+
+        [System.ComponentModel.DataAnnotations.StringLength(1000)]
+        public string? Comment { get; set; }
+    }
+}

@@ -1,0 +1,62 @@
+@inject ISnackbar Snackbar
+
+<MudStack Spacing="2">
+    <MudFileUpload T="IReadOnlyList<IBrowserFile>" Multiple="true" Accept="image/*"
+                   FilesChanged="OnFilesChanged" MaximumFileCount="10">
+        <ActivatorContent>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.CloudUpload"
+                       Color="Color.Primary" aria-label="Selecionar fotos do produto">
+                Adicionar fotos
+            </MudButton>
+        </ActivatorContent>
+    </MudFileUpload>
+
+    @if (_previews.Count > 0)
+    {
+        <MudText Typo="Typo.caption">@_previews.Count foto(s) selecionada(s)</MudText>
+        <MudGrid>
+            @foreach (var (url, name) in _previews)
+            {
+                <MudItem xs="6" sm="4" md="3">
+                    <MudCard Outlined="true">
+                        <MudCardMedia Image="@url" Height="120" Alt="@name" />
+                        <MudCardActions>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                           Color="Color.Error"
+                                           OnClick="@(() => RemovePreview(url))"
+                                           aria-label="@($"Remover foto {name}")" />
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudStack>
+
+@code {
+    [Parameter] public EventCallback<IReadOnlyList<IBrowserFile>> FilesChanged { get; set; }
+
+    private readonly List<(string Url, string Name)> _previews = [];
+
+    private async Task OnFilesChanged(IReadOnlyList<IBrowserFile> files)
+    {
+        _previews.Clear();
+        foreach (var file in files)
+        {
+            try
+            {
+                var buf = new byte[Math.Min(file.Size, 2 * 1024 * 1024)];
+                await file.OpenReadStream(2 * 1024 * 1024).ReadAsync(buf);
+                var b64 = Convert.ToBase64String(buf);
+                _previews.Add(($"data:{file.ContentType};base64,{b64}", file.Name));
+            }
+            catch
+            {
+                Snackbar.Add($"Erro ao carregar {file.Name}", Severity.Warning);
+            }
+        }
+        await FilesChanged.InvokeAsync(files);
+    }
+
+    private void RemovePreview(string url) => _previews.RemoveAll(p => p.Url == url);
+}

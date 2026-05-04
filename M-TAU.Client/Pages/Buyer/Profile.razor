@@ -1,0 +1,89 @@
+@page "/buyer/profile"
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<PageTitle>Meu Perfil — M-TAU</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Meu Perfil</MudText>
+
+<MudGrid>
+    <MudItem xs="12" md="8">
+        <MudCard Elevation="2" Class="pa-4">
+            <MudCardContent>
+                <EditForm Model="_model" OnValidSubmit="SaveAsync">
+                    <DataAnnotationsValidator />
+                    <MudStack Spacing="3">
+                        <MudTextField @bind-Value="_model.Name" Label="Nome completo"
+                                      Variant="Variant.Outlined"
+                                      For="@(() => _model.Name)"
+                                      aria-label="Nome completo" />
+                        <MudTextField @bind-Value="_model.Email" Label="E-mail"
+                                      Variant="Variant.Outlined" InputType="InputType.Email"
+                                      For="@(() => _model.Email)"
+                                      aria-label="Endereço de e-mail" />
+                        <MudDivider />
+                        <MudText Typo="Typo.subtitle2">Localização</MudText>
+                        <CepLookup @bind-Cep="_cep" @bind-City="_city" @bind-Neighborhood="_neighborhood" />
+                        <ValidationSummary />
+                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                                   Color="Color.Primary" Disabled="_saving"
+                                   aria-label="Salvar alterações">
+                            @(_saving ? "Salvando…" : "Salvar alterações")
+                        </MudButton>
+                    </MudStack>
+                </EditForm>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" md="4">
+        <MudCard Elevation="2" Class="pa-4">
+            <MudCardContent>
+                <MudText Typo="Typo.h6" GutterBottom="true">Avaliação média</MudText>
+                <div class="d-flex align-center gap-2">
+                    <RatingStars Value="@_avgRating" ReadOnly="true" />
+                    <MudText>@_avgRating.ToString("0.0") / 5</MudText>
+                </div>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    Baseado em @_reviewCount avaliação(ões)
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private readonly ProfileModel _model = new();
+    private bool _saving;
+    private string _cep = string.Empty;
+    private string _city = string.Empty;
+    private string _neighborhood = string.Empty;
+    private int _avgRating = 4;
+    private int _reviewCount = 0;
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        try
+        {
+            // TODO: chamar API de atualização de usuário
+            await Task.Delay(500);
+            Snackbar.Add("Perfil atualizado com sucesso!", Severity.Success);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private sealed class ProfileModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.StringLength(120, MinimumLength = 2)]
+        public string Name { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.EmailAddress]
+        public string Email { get; set; } = string.Empty;
+    }
+}

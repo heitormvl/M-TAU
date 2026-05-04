@@ -1,0 +1,101 @@
+@page "/seller/orders"
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<PageTitle>Pedidos Recebidos — M-TAU</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Pedidos Recebidos</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_orders is null || _orders.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">Nenhum pedido recebido ainda.</MudAlert>
+}
+else
+{
+    <MudTable Items="_orders" Hover="true" Dense="false" Striped="true"
+              aria-label="Pedidos recebidos">
+        <HeaderContent>
+            <MudTh>Produto</MudTh>
+            <MudTh>Data</MudTh>
+            <MudTh>Valor</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Ações</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Produto">@context.ProductId</MudTd>
+            <MudTd DataLabel="Data">@context.OrderDate.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd DataLabel="Valor">@context.TotalAmount.ToString("C2")</MudTd>
+            <MudTd DataLabel="Status"><StatusBadge Status="@context.Status.ToString()" /></MudTd>
+            <MudTd DataLabel="Ações">
+                @if (context.Status == OrderStatus.Pending)
+                {
+                    <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Success"
+                               OnClick="@(() => UpdateStatusAsync(context, OrderStatus.Confirmed))"
+                               aria-label="Confirmar pedido">
+                        Confirmar
+                    </MudButton>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error" Class="ml-1"
+                               OnClick="@(() => UpdateStatusAsync(context, OrderStatus.Cancelled))"
+                               aria-label="Cancelar pedido">
+                        Cancelar
+                    </MudButton>
+                }
+                @if (context.Status == OrderStatus.Confirmed)
+                {
+                    <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
+                               OnClick="@(() => UpdateStatusAsync(context, OrderStatus.Completed))"
+                               aria-label="Marcar como concluído">
+                        Concluir
+                    </MudButton>
+                }
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+    <Pagination CurrentPage="_currentPage" TotalPages="_totalPages" PageChanged="OnPageChanged" />
+}
+
+@code {
+    private IReadOnlyCollection<OrderResponseDto>? _orders;
+    private bool _loading = true;
+    private int _currentPage = 1;
+    private int _totalPages = 1;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            // TODO: filtrar por sellerId autenticado
+            _orders = await Http.GetFromJsonAsync<IReadOnlyCollection<OrderResponseDto>>(
+                $"api/orders?pageNumber={_currentPage}&pageSize=15") ?? [];
+        }
+        catch { _orders = []; }
+        finally { _loading = false; }
+    }
+
+    private async Task UpdateStatusAsync(OrderResponseDto order, OrderStatus newStatus)
+    {
+        var response = await Http.PatchAsJsonAsync($"api/orders/{order.Id}/status", new { status = newStatus });
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Status atualizado.", Severity.Success);
+            await LoadAsync();
+        }
+        else
+        {
+            Snackbar.Add("Erro ao atualizar status.", Severity.Error);
+        }
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadAsync();
+    }
+}

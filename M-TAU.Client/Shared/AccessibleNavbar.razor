@@ -1,0 +1,64 @@
+@inject NavigationManager Nav
+
+<MudAppBar Color="Color.Primary" Fixed="true" Elevation="4">
+    <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                   aria-label="Abrir menu" OnClick="ToggleDrawer" />
+
+    <MudText Typo="Typo.h6" Class="ml-2">
+        <MudLink Href="/" Color="Color.Inherit" Underline="Underline.None" aria-label="M-TAU início">M-TAU</MudLink>
+    </MudText>
+
+    <MudSpacer />
+
+    <MudTextField @bind-Value="_search" Placeholder="Buscar produtos..." Variant="Variant.Outlined"
+                  Margin="Margin.Dense" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search"
+                  OnAdornmentClick="GoSearch" Class="nav-search" aria-label="Campo de busca"
+                  Style="background:white; border-radius:4px; max-width:320px;" />
+
+    <MudSpacer />
+
+    <MudHidden Breakpoint="Breakpoint.SmAndDown">
+        <MudButton Href="/catalog" Color="Color.Inherit" StartIcon="@Icons.Material.Filled.Category">Catálogo</MudButton>
+        <MudButton Href="/login" Color="Color.Inherit" StartIcon="@Icons.Material.Filled.Login">Entrar</MudButton>
+        <MudButton Href="/register" Variant="Variant.Outlined" Color="Color.Inherit" StartIcon="@Icons.Material.Filled.PersonAdd">Cadastrar</MudButton>
+    </MudHidden>
+</MudAppBar>
+
+<MudDrawer @bind-Open="_drawerOpen" Elevation="2" aria-label="Menu de navegação">
+    <MudDrawerHeader>
+        <MudText Typo="Typo.h6">M-TAU</MudText>
+    </MudDrawerHeader>
+    <MudNavMenu>
+        <MudNavLink Href="/" Icon="@Icons.Material.Filled.Home" Match="NavLinkMatch.All">Início</MudNavLink>
+        <MudNavLink Href="/catalog" Icon="@Icons.Material.Filled.Category">Catálogo</MudNavLink>
+        <MudDivider />
+        <MudNavGroup Title="Comprador" Icon="@Icons.Material.Filled.ShoppingCart" Expanded="false">
+            <MudNavLink Href="/buyer/orders">Meus Pedidos</MudNavLink>
+            <MudNavLink Href="/buyer/chat">Minhas Negociações</MudNavLink>
+            <MudNavLink Href="/buyer/profile">Meu Perfil</MudNavLink>
+        </MudNavGroup>
+        <MudNavGroup Title="Vendedor" Icon="@Icons.Material.Filled.Store" Expanded="false">
+            <MudNavLink Href="/seller/dashboard">Dashboard</MudNavLink>
+            <MudNavLink Href="/seller/products">Meus Anúncios</MudNavLink>
+            <MudNavLink Href="/seller/orders">Pedidos Recebidos</MudNavLink>
+            <MudNavLink Href="/seller/chat">Negociações</MudNavLink>
+            <MudNavLink Href="/seller/profile">Perfil</MudNavLink>
+        </MudNavGroup>
+        <MudDivider />
+        <MudNavLink Href="/login" Icon="@Icons.Material.Filled.Login">Entrar</MudNavLink>
+        <MudNavLink Href="/register" Icon="@Icons.Material.Filled.PersonAdd">Cadastrar</MudNavLink>
+    </MudNavMenu>
+</MudDrawer>
+
+@code {
+    private bool _drawerOpen;
+    private string _search = string.Empty;
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    private void GoSearch()
+    {
+        if (!string.IsNullOrWhiteSpace(_search))
+            Nav.NavigateTo($"/catalog?q={Uri.EscapeDataString(_search)}");
+    }
+}

@@ -1,0 +1,79 @@
+@page "/buyer/orders"
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<PageTitle>Meus Pedidos — M-TAU</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Meus Pedidos</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_orders is null || _orders.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">
+        Você ainda não fez nenhum pedido.
+        <MudLink Href="/catalog">Explorar catálogo</MudLink>
+    </MudAlert>
+}
+else
+{
+    <MudTable Items="_orders" Hover="true" Dense="false" Striped="true"
+              aria-label="Lista de pedidos">
+        <HeaderContent>
+            <MudTh>Produto</MudTh>
+            <MudTh>Data</MudTh>
+            <MudTh>Valor</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Ações</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Produto">@context.ProductId</MudTd>
+            <MudTd DataLabel="Data">@context.OrderDate.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd DataLabel="Valor">@context.TotalAmount.ToString("C2")</MudTd>
+            <MudTd DataLabel="Status"><StatusBadge Status="@context.Status.ToString()" /></MudTd>
+            <MudTd DataLabel="Ações">
+                <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Primary"
+                           OnClick="@(() => Nav.NavigateTo($"/buyer/orders/{context.Id}"))">
+                    Detalhes
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+    <Pagination CurrentPage="_currentPage" TotalPages="_totalPages" PageChanged="OnPageChanged" />
+}
+
+@code {
+    private IReadOnlyCollection<OrderResponseDto>? _orders;
+    private bool _loading = true;
+    private int _currentPage = 1;
+    private int _totalPages = 1;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            // TODO: filtrar pelo buyerId do usuário autenticado
+            _orders = await Http.GetFromJsonAsync<IReadOnlyCollection<OrderResponseDto>>(
+                $"api/orders?pageNumber={_currentPage}&pageSize=10") ?? [];
+        }
+        catch
+        {
+            _orders = [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadAsync();
+    }
+}

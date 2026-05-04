@@ -1,0 +1,153 @@
+@page "/catalog/{Id:guid}"
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_product?.Title ?? "Produto") — M-TAU</PageTitle>
+
+@if (_loading)
+{
+    <MudGrid>
+        <MudItem xs="12" md="6"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="400px" /></MudItem>
+        <MudItem xs="12" md="6"><MudSkeleton Height="300px" /></MudItem>
+    </MudGrid>
+}
+else if (_product is null)
+{
+    <MudAlert Severity="Severity.Error">Produto não encontrado.</MudAlert>
+}
+else
+{
+    <MudBreadcrumbs Items="@_breadcrumbs" Class="mb-4" />
+    <MudGrid>
+        @* Photo gallery *@
+        <MudItem xs="12" md="6">
+            @if (_product.Photos is { Count: > 0 })
+            {
+                var mainPhoto = _product.Photos.FirstOrDefault(p => p.IsMain) ?? _product.Photos.First();
+                <MudImage Src="@mainPhoto.Url" Alt="@_product.Title" ObjectFit="ObjectFit.Contain"
+                          Style="width:100%;height:400px;border-radius:8px;background:#f5f5f5;" />
+                @if (_product.Photos.Count > 1)
+                {
+                    <MudStack Row="true" Spacing="1" Class="mt-2" Style="overflow-x:auto;">
+                        @foreach (var photo in _product.Photos)
+                        {
+                            <MudImage Src="@photo.Url" Alt="@_product.Title"
+                                      Style="width:80px;height:60px;object-fit:cover;border-radius:4px;cursor:pointer;" />
+                        }
+                    </MudStack>
+                }
+            }
+            else
+            {
+                <MudPaper Class="d-flex align-center justify-center" Style="height:400px;" Outlined="true">
+                    <MudIcon Icon="@Icons.Material.Filled.Image" Style="font-size:5rem; opacity:.3;" />
+                </MudPaper>
+            }
+        </MudItem>
+
+        @* Product info *@
+        <MudItem xs="12" md="6">
+            <MudStack Spacing="3">
+                <div>
+                    <StatusBadge Status="@_product.Status.ToString()" />
+                    @if (_product.TechnicalSpec is not null)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Outlined" Class="ml-2">
+                            @_product.TechnicalSpec.Category.ToString()
+                        </MudChip>
+                    }
+                </div>
+                <MudText Typo="Typo.h4">@_product.Title</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Primary">@_product.Price.ToString("C2")</MudText>
+
+                @if (!string.IsNullOrWhiteSpace(_product.Description))
+                {
+                    <MudText Typo="Typo.body1">@_product.Description</MudText>
+                }
+
+                @* Technical specs *@
+                @if (_product.TechnicalSpec is { } spec)
+                {
+                    <MudExpansionPanels>
+                        <MudExpansionPanel Text="Especificações Técnicas" InitiallyExpanded="true">
+                            <MudList T="string" Dense="true">
+                                @if (!string.IsNullOrWhiteSpace(spec.Measures))
+                                {
+                                    <MudListItem Icon="@Icons.Material.Filled.Straighten">
+                                        Medidas: @spec.Measures
+                                    </MudListItem>
+                                }
+                                @if (spec.WeightCapacity > 0)
+                                {
+                                    <MudListItem Icon="@Icons.Material.Filled.FitnessCenter">
+                                        Capacidade de peso: @spec.WeightCapacity kg
+                                    </MudListItem>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(spec.UsageTime))
+                                {
+                                    <MudListItem Icon="@Icons.Material.Filled.AccessTime">
+                                        Tempo de uso: @spec.UsageTime
+                                    </MudListItem>
+                                }
+                            </MudList>
+                        </MudExpansionPanel>
+                    </MudExpansionPanels>
+                }
+
+                @* Actions *@
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                               StartIcon="@Icons.Material.Filled.ShoppingCart"
+                               Disabled="@(_product.Status != ProductStatus.Active)"
+                               OnClick="@(() => Nav.NavigateTo($"/checkout/{_product.Id}"))"
+                               aria-label="Comprar produto">
+                        Comprar
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true"
+                               StartIcon="@Icons.Material.Filled.Chat"
+                               OnClick="StartChat"
+                               aria-label="Contatar vendedor">
+                        Contatar vendedor
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private ProductResponseDto? _product;
+    private bool _loading = true;
+    private List<BreadcrumbItem> _breadcrumbs = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _product = await Http.GetFromJsonAsync<ProductResponseDto>($"api/products/{Id}");
+        }
+        catch
+        {
+            _product = null;
+        }
+        finally
+        {
+            _loading = false;
+            _breadcrumbs =
+            [
+                new("Início", "/"),
+                new("Catálogo", "/catalog"),
+                new(_product?.Title ?? "Produto", null, disabled: true)
+            ];
+        }
+    }
+
+    private void StartChat()
+    {
+        // TODO: criar sessão de chat via API e navegar para ela
+        Snackbar.Add("Funcionalidade de chat em desenvolvimento.", Severity.Info);
+    }
+}

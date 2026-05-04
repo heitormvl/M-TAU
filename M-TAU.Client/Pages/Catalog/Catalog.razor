@@ -1,0 +1,170 @@
+@page "/catalog"
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<PageTitle>Catálogo — M-TAU</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Catálogo de Produtos</MudText>
+
+<MudGrid>
+    @* Filters sidebar *@
+    <MudItem xs="12" md="3">
+        <MudPaper Class="pa-4" Outlined="true">
+            <MudText Typo="Typo.h6" GutterBottom="true">Filtros</MudText>
+
+            <MudTextField @bind-Value="_title" Label="Buscar por nome"
+                          Variant="Variant.Outlined" Margin="Margin.Dense"
+                          Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search"
+                          aria-label="Buscar por nome do produto" Class="mb-3" />
+
+            <MudSelect T="DisabilityCategory?" @bind-Value="_category"
+                       Label="Categoria de deficiência" Variant="Variant.Outlined"
+                       Margin="Margin.Dense" Clearable="true"
+                       aria-label="Filtrar por categoria de deficiência" Class="mb-3">
+                @foreach (DisabilityCategory cat in Enum.GetValues<DisabilityCategory>())
+                {
+                    <MudSelectItem T="DisabilityCategory?" Value="@((DisabilityCategory?)cat)">@CategoryLabel(cat)</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudNumericField T="decimal?" @bind-Value="_minPrice" Label="Preço mínimo (R$)"
+                             Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" Class="mb-2"
+                             aria-label="Preço mínimo" />
+            <MudNumericField T="decimal?" @bind-Value="_maxPrice" Label="Preço máximo (R$)"
+                             Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" Class="mb-4"
+                             aria-label="Preço máximo" />
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                       OnClick="ApplyFilter" aria-label="Aplicar filtros">
+                Aplicar filtros
+            </MudButton>
+            <MudButton Variant="Variant.Text" FullWidth="true" OnClick="ClearFilter" Class="mt-1"
+                       aria-label="Limpar filtros">
+                Limpar
+            </MudButton>
+        </MudPaper>
+    </MudItem>
+
+    @* Product grid *@
+    <MudItem xs="12" md="9">
+        @if (_loading)
+        {
+            <MudGrid>
+                @for (int i = 0; i < 6; i++)
+                {
+                    <MudItem xs="12" sm="6" lg="4">
+                        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="260px" />
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+        else if (_products is null || _products.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">Nenhum produto encontrado com os filtros selecionados.</MudAlert>
+        }
+        else
+        {
+            <MudText Typo="Typo.caption" Class="mb-2">@_products.Count resultado(s)</MudText>
+            <MudGrid>
+                @foreach (var p in _products)
+                {
+                    <MudItem xs="12" sm="6" lg="4">
+                        <ProductCard Product="@p" />
+                    </MudItem>
+                }
+            </MudGrid>
+            <Pagination CurrentPage="_currentPage" TotalPages="_totalPages" PageChanged="OnPageChanged" />
+        }
+    </MudItem>
+</MudGrid>
+
+@code {
+    private string? _title;
+    private DisabilityCategory? _category;
+    private decimal? _minPrice;
+    private decimal? _maxPrice;
+    private IReadOnlyCollection<ProductResponseDto>? _products;
+    private bool _loading = true;
+    private int _currentPage = 1;
+    private int _totalPages = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = new Uri(Nav.Uri);
+        var query = ParseQuery(uri.Query);
+        if (query.TryGetValue("q", out var q)) _title = q;
+        if (query.TryGetValue("category", out var cat) && Enum.TryParse<DisabilityCategory>(cat, out var dc))
+            _category = dc;
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            var url = BuildUrl();
+            _products = await Http.GetFromJsonAsync<IReadOnlyCollection<ProductResponseDto>>(url) ?? [];
+        }
+        catch
+        {
+            _products = [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string BuildUrl()
+    {
+        var qs = new System.Text.StringBuilder("api/products?pageSize=12");
+        qs.Append($"&pageNumber={_currentPage}");
+        if (!string.IsNullOrWhiteSpace(_title)) qs.Append($"&title={Uri.EscapeDataString(_title)}");
+        if (_category.HasValue) qs.Append($"&category={_category}");
+        if (_minPrice.HasValue) qs.Append($"&minPrice={_minPrice}");
+        if (_maxPrice.HasValue) qs.Append($"&maxPrice={_maxPrice}");
+        return qs.ToString();
+    }
+
+    private async Task ApplyFilter()
+    {
+        _currentPage = 1;
+        await LoadAsync();
+    }
+
+    private async Task ClearFilter()
+    {
+        _title = null;
+        _category = null;
+        _minPrice = null;
+        _maxPrice = null;
+        _currentPage = 1;
+        await LoadAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadAsync();
+    }
+
+    private static Dictionary<string, string> ParseQuery(string query)
+    {
+        return query.TrimStart('?')
+            .Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Split('=', 2))
+            .Where(p => p.Length == 2)
+            .ToDictionary(p => p[0], p => Uri.UnescapeDataString(p[1]));
+    }
+
+    private static string CategoryLabel(DisabilityCategory cat) => cat switch
+    {
+        DisabilityCategory.Physical  => "Física",
+        DisabilityCategory.Visual    => "Visual",
+        DisabilityCategory.Auditory  => "Auditiva",
+        DisabilityCategory.Cognitive => "Cognitiva",
+        _                            => cat.ToString()
+    };
+}
