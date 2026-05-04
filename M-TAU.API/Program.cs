@@ -1,7 +1,9 @@
 using System.Text;
 using M_TAU.Application;
 using M_TAU.Infrastructure;
+using M_TAU.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,6 +39,12 @@ builder.Services.AddOpenApi(options =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+}
 
 if (app.Environment.IsDevelopment())
 {
