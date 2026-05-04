@@ -14,18 +14,20 @@ public sealed class OrderRepository(AppDbContext context) : IOrderRepository
         => await context.Orders.ToListAsync(cancellationToken);
 
     public async Task AddAsync(Order entity, CancellationToken cancellationToken = default)
-        => await context.Orders.AddAsync(entity, cancellationToken);
-
-    public Task UpdateAsync(Order entity, CancellationToken cancellationToken = default)
     {
-        context.Orders.Update(entity);
-        return Task.CompletedTask;
+        await context.Orders.AddAsync(entity, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
     }
 
-    public Task DeleteAsync(Order entity, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(Order entity, CancellationToken cancellationToken = default)
+    {
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(Order entity, CancellationToken cancellationToken = default)
     {
         context.Orders.Remove(entity);
-        return Task.CompletedTask;
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<Order>> ListByBuyerAsync(Guid buyerId, CancellationToken cancellationToken = default)

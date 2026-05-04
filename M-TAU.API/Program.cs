@@ -46,6 +46,20 @@ using (var scope = app.Services.CreateScope())
     db.Database.EnsureCreated();
 }
 
+app.UseExceptionHandler(err => err.Run(async ctx =>
+{
+    var feature = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+    var ex = feature?.Error;
+    ctx.Response.ContentType = "application/json";
+    ctx.Response.StatusCode = ex switch
+    {
+        KeyNotFoundException => StatusCodes.Status404NotFound,
+        ArgumentException => StatusCodes.Status400BadRequest,
+        _ => StatusCodes.Status500InternalServerError
+    };
+    await ctx.Response.WriteAsJsonAsync(new { message = ex?.Message });
+}));
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
