@@ -1,0 +1,60 @@
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<MudGrid>
+    <MudItem xs="12" sm="4">
+        <MudTextField @bind-Value="Cep"
+                      Label="CEP"
+                      Variant="Variant.Outlined"
+                      Mask="@(new PatternMask("00000-000"))"
+                      MaxLength="9"
+                      Adornment="Adornment.End"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      OnAdornmentClick="LookupAsync"
+                      aria-label="CEP para autopreenchimento de endereço" />
+    </MudItem>
+    <MudItem xs="12" sm="5">
+        <MudTextField @bind-Value="City" Label="Cidade" Variant="Variant.Outlined"
+                      ReadOnly="true" aria-label="Cidade (preenchido automaticamente)" />
+    </MudItem>
+    <MudItem xs="12" sm="3">
+        <MudTextField @bind-Value="Neighborhood" Label="Bairro" Variant="Variant.Outlined"
+                      ReadOnly="true" aria-label="Bairro (preenchido automaticamente)" />
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public string Cep { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> CepChanged { get; set; }
+    [Parameter] public string City { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> CityChanged { get; set; }
+    [Parameter] public string Neighborhood { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> NeighborhoodChanged { get; set; }
+
+    private async Task LookupAsync()
+    {
+        var raw = Cep.Replace("-", "").Trim();
+        if (raw.Length != 8) return;
+        try
+        {
+            var result = await Http.GetFromJsonAsync<ViaCepResponse>($"https://viacep.com.br/ws/{raw}/json/");
+            if (result is not null && !result.Erro)
+            {
+                City = result.Localidade;
+                Neighborhood = result.Bairro;
+                await CityChanged.InvokeAsync(City);
+                await NeighborhoodChanged.InvokeAsync(Neighborhood);
+            }
+            else
+            {
+                Snackbar.Add("CEP não encontrado.", Severity.Warning);
+            }
+        }
+        catch
+        {
+            Snackbar.Add("Erro ao consultar o CEP.", Severity.Error);
+        }
+    }
+
+    private sealed record ViaCepResponse(string Localidade, string Bairro, bool Erro = false);
+}

@@ -1,0 +1,16 @@
+@if (TotalPages > 1)
+{
+    <div class="d-flex justify-center mt-4" role="navigation" aria-label="Paginação">
+        <MudPagination Count="@TotalPages" Selected="@CurrentPage" SelectedChanged="OnPageChanged"
+                       ShowFirstButton="true" ShowLastButton="true"
+                       BoundaryCount="1" MiddleCount="3" />
+    </div>
+}
+
+@code {
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public int TotalPages { get; set; } = 1;
+    [Parameter] public EventCallback<int> PageChanged { get; set; }
+
+    private async Task OnPageChanged(int page) => await PageChanged.InvokeAsync(page);
+}

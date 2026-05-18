@@ -1,0 +1,16 @@
+<div class="@($"d-flex {(IsOwn ? "justify-end" : "justify-start")} mb-2")"
+     role="article" aria-label="@(IsOwn ? "Sua mensagem" : "Mensagem recebida")">
+    <MudPaper Class="@($"pa-3 rounded-lg {(IsOwn ? "mud-theme-primary" : "mud-paper-outlined")}")"
+              Elevation="@(IsOwn ? 2 : 0)"
+              Style="@($"max-width:70%; {(IsOwn ? "color:white;" : "")}")">
+        <MudText Typo="Typo.body2">@Message.Content</MudText>
+        <MudText Typo="Typo.caption" Style="opacity:.7" Class="d-block text-right mt-1">
+            @Message.SentAt.ToString("HH:mm")
+        </MudText>
+    </MudPaper>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public MessageResponseDto Message { get; set; } = default!;
+    [Parameter] public bool IsOwn { get; set; }
+}

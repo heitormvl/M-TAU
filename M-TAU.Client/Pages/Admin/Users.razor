@@ -1,0 +1,118 @@
+@page "/admin/users"
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<PageTitle>Gestão de Usuários — M-TAU Admin</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Gestão de Usuários</MudText>
+
+<MudStack Row="true" Spacing="2" Class="mb-4">
+    <MudTextField @bind-Value="_search" Label="Buscar por nome ou e-mail" Variant="Variant.Outlined"
+                  Margin="Margin.Dense" Style="max-width:360px;"
+                  Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search"
+                  OnAdornmentClick="SearchAsync"
+                  aria-label="Buscar usuários por nome ou e-mail" />
+    <MudSelect T="UserType?" @bind-Value="_roleFilter" Label="Tipo" Variant="Variant.Outlined"
+               Margin="Margin.Dense" Clearable="true" Style="max-width:160px;"
+               aria-label="Filtrar por tipo de usuário">
+        @foreach (UserType role in Enum.GetValues<UserType>())
+        {
+            <MudSelectItem T="UserType?" Value="@((UserType?)role)">@role.ToString()</MudSelectItem>
+        }
+    </MudSelect>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SearchAsync"
+               aria-label="Aplicar filtro">Filtrar</MudButton>
+</MudStack>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_users is null || _users.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">Nenhum usuário encontrado.</MudAlert>
+}
+else
+{
+    <MudTable Items="_users" Hover="true" Dense="true" Striped="true"
+              aria-label="Lista de usuários">
+        <HeaderContent>
+            <MudTh>Nome</MudTh>
+            <MudTh>E-mail</MudTh>
+            <MudTh>Tipo</MudTh>
+            <MudTh>Desde</MudTh>
+            <MudTh>Ações</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Nome">@context.Name</MudTd>
+            <MudTd DataLabel="E-mail">@context.Email</MudTd>
+            <MudTd DataLabel="Tipo">
+                <MudChip T="string" Size="Size.Small" Color="@RoleColor(context.Role)">
+                    @context.Role.ToString()
+                </MudChip>
+            </MudTd>
+            <MudTd DataLabel="Desde">@context.CreatedAt.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd DataLabel="Ações">
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error"
+                           OnClick="@(() => DeactivateAsync(context))"
+                           aria-label="@($"Desativar conta de {context.Name}")">
+                    Desativar
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+    <Pagination CurrentPage="_currentPage" TotalPages="_totalPages" PageChanged="OnPageChanged" />
+}
+
+@code {
+    private IReadOnlyCollection<UserResponseDto>? _users;
+    private string _search = string.Empty;
+    private UserType? _roleFilter;
+    private bool _loading = true;
+    private int _currentPage = 1;
+    private int _totalPages = 1;
+
+    protected override async Task OnInitializedAsync() => await SearchAsync();
+
+    private async Task SearchAsync()
+    {
+        _loading = true;
+        _currentPage = 1;
+        try
+        {
+            var qs = $"api/users?pageNumber={_currentPage}&pageSize=20";
+            if (!string.IsNullOrWhiteSpace(_search)) qs += $"&search={Uri.EscapeDataString(_search)}";
+            if (_roleFilter.HasValue) qs += $"&role={_roleFilter}";
+            _users = await Http.GetFromJsonAsync<IReadOnlyCollection<UserResponseDto>>(qs) ?? [];
+        }
+        catch { _users = []; }
+        finally { _loading = false; }
+    }
+
+    private async Task DeactivateAsync(UserResponseDto user)
+    {
+        var response = await Http.DeleteAsync($"api/users/{user.Id}");
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add($"Conta de {user.Name} desativada.", Severity.Success);
+            await SearchAsync();
+        }
+        else
+        {
+            Snackbar.Add("Erro ao desativar conta.", Severity.Error);
+        }
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await SearchAsync();
+    }
+
+    private static Color RoleColor(UserType role) => role switch
+    {
+        UserType.Admin  => Color.Error,
+        UserType.Seller => Color.Secondary,
+        _               => Color.Primary
+    };
+}

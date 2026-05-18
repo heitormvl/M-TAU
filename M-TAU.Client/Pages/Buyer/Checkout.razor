@@ -1,0 +1,145 @@
+@page "/checkout/{ProductId:guid}"
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>Checkout — M-TAU</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Finalizar Compra</MudText>
+
+@if (_loadingProduct)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_product is null)
+{
+    <MudAlert Severity="Severity.Error">Produto não encontrado.</MudAlert>
+}
+else
+{
+    <MudGrid>
+        @* Order summary *@
+        <MudItem xs="12" md="5">
+            <MudCard Elevation="2" Class="pa-4">
+                <MudCardHeader>
+                    <MudText Typo="Typo.h6">Resumo do pedido</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudStack Spacing="2">
+                        @if (_product.Photos is { Count: > 0 })
+                        {
+                            <MudImage Src="@_product.Photos.First().Url" Alt="@_product.Title"
+                                      Height="160" ObjectFit="ObjectFit.Cover" Style="border-radius:8px;" />
+                        }
+                        <MudText Typo="Typo.subtitle1">@_product.Title</MudText>
+                        <MudDivider />
+                        <div class="d-flex justify-space-between">
+                            <MudText>Total</MudText>
+                            <MudText Typo="Typo.h6" Color="Color.Primary">@_product.Price.ToString("C2")</MudText>
+                        </div>
+                    </MudStack>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        @* Address + payment *@
+        <MudItem xs="12" md="7">
+            <MudCard Elevation="2" Class="pa-4">
+                <MudCardHeader>
+                    <MudText Typo="Typo.h6">Endereço de entrega</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    <EditForm Model="_form" OnValidSubmit="ProceedToPayment">
+                        <DataAnnotationsValidator />
+                        <MudStack Spacing="3">
+                            <CepLookup @bind-Cep="_form.Cep" @bind-City="_form.City"
+                                       @bind-Neighborhood="_form.Neighborhood" />
+                            <MudTextField @bind-Value="_form.Street" Label="Logradouro"
+                                          Variant="Variant.Outlined"
+                                          For="@(() => _form.Street)"
+                                          aria-label="Logradouro" />
+                            <MudGrid>
+                                <MudItem xs="4">
+                                    <MudTextField @bind-Value="_form.Number" Label="Número"
+                                                  Variant="Variant.Outlined"
+                                                  For="@(() => _form.Number)"
+                                                  aria-label="Número" />
+                                </MudItem>
+                                <MudItem xs="8">
+                                    <MudTextField @bind-Value="_form.Complement" Label="Complemento"
+                                                  Variant="Variant.Outlined"
+                                                  aria-label="Complemento (opcional)" />
+                                </MudItem>
+                            </MudGrid>
+                            <ValidationSummary />
+                            <MudAlert Severity="Severity.Info" Dense="true">
+                                Você será redirecionado ao gateway de pagamento (Mercado Pago / Stripe) para concluir a transação.
+                            </MudAlert>
+                            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                                       Color="Color.Success" FullWidth="true"
+                                       StartIcon="@Icons.Material.Filled.Payment"
+                                       Disabled="_submitting"
+                                       aria-label="Ir para pagamento">
+                                @(_submitting ? "Processando…" : "Ir para pagamento")
+                            </MudButton>
+                        </MudStack>
+                    </EditForm>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public Guid ProductId { get; set; }
+
+    private ProductResponseDto? _product;
+    private bool _loadingProduct = true;
+    private bool _submitting;
+    private readonly CheckoutForm _form = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _product = await Http.GetFromJsonAsync<ProductResponseDto>($"api/products/{ProductId}");
+        }
+        catch { }
+        finally { _loadingProduct = false; }
+    }
+
+    private async Task ProceedToPayment()
+    {
+        _submitting = true;
+        try
+        {
+            // TODO: criar Order via API e obter URL do gateway de pagamento
+            var dto = new OrderCreateDto(Guid.Empty /* buyerId from auth */, ProductId, _product!.Price);
+            var response = await Http.PostAsJsonAsync("api/orders", dto);
+            if (response.IsSuccessStatusCode)
+            {
+                // TODO: redirecionar para URL de checkout do gateway
+                Snackbar.Add("Pedido criado! Redirecionando para o pagamento…", Severity.Success);
+                Nav.NavigateTo("/buyer/orders");
+            }
+            else
+            {
+                Snackbar.Add("Erro ao criar pedido.", Severity.Error);
+            }
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private sealed class CheckoutForm
+    {
+        [System.ComponentModel.DataAnnotations.Required] public string Cep { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
+        public string Neighborhood { get; set; } = string.Empty;
+        [System.ComponentModel.DataAnnotations.Required] public string Street { get; set; } = string.Empty;
+        [System.ComponentModel.DataAnnotations.Required] public string Number { get; set; } = string.Empty;
+        public string? Complement { get; set; }
+    }
+}

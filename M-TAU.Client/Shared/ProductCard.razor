@@ -1,0 +1,30 @@
+@inject NavigationManager Nav
+
+<MudCard Outlined="true" Class="product-card h-100">
+    <MudCardMedia Image="@(Product.Photos?.FirstOrDefault()?.Url ?? "img/placeholder.png")"
+                  Height="180"
+                  Alt="@Product.Title" />
+    <MudCardContent>
+        <MudText Typo="Typo.subtitle1" Class="mud-text-truncate">@Product.Title</MudText>
+        <MudText Typo="Typo.h6" Color="Color.Primary">@Product.Price.ToString("C2")</MudText>
+        <div class="d-flex align-center gap-2 mt-1">
+            <StatusBadge Status="@Product.Status.ToString()" />
+            @if (Product.TechnicalSpec is not null)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Outlined">
+                    @Product.TechnicalSpec.Category.ToString()
+                </MudChip>
+            }
+        </div>
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton Variant="Variant.Text" Color="Color.Primary"
+                   OnClick="@(() => Nav.NavigateTo($"/catalog/{Product.Id}"))">
+            Ver detalhes
+        </MudButton>
+    </MudCardActions>
+</MudCard>
+
+@code {
+    [Parameter, EditorRequired] public ProductResponseDto Product { get; set; } = default!;
+}

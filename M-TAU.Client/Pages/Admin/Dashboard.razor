@@ -1,0 +1,71 @@
+@page "/admin"
+@inject HttpClient Http
+
+<PageTitle>Painel Administrativo — M-TAU</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Painel Administrativo</MudText>
+
+<MudGrid Class="mb-4">
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="3">
+            <MudCardContent Class="d-flex align-center gap-3">
+                <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Primary" Style="font-size:2.5rem;" />
+                <div>
+                    <MudText Typo="Typo.caption">Usuários</MudText>
+                    <MudText Typo="Typo.h5">@_metrics.Users</MudText>
+                </div>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Size="Size.Small" Href="/admin/users">Gerenciar</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="3">
+            <MudCardContent Class="d-flex align-center gap-3">
+                <MudIcon Icon="@Icons.Material.Filled.Inventory" Color="Color.Secondary" Style="font-size:2.5rem;" />
+                <div>
+                    <MudText Typo="Typo.caption">Produtos</MudText>
+                    <MudText Typo="Typo.h5">@_metrics.Products</MudText>
+                </div>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Size="Size.Small" Href="/admin/products">Moderar</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="3">
+            <MudCardContent Class="d-flex align-center gap-3">
+                <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Color="Color.Success" Style="font-size:2.5rem;" />
+                <div>
+                    <MudText Typo="Typo.caption">Pedidos</MudText>
+                    <MudText Typo="Typo.h5">@_metrics.Orders</MudText>
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="3">
+            <MudCardContent Class="d-flex align-center gap-3">
+                <MudIcon Icon="@Icons.Material.Filled.Chat" Color="Color.Warning" Style="font-size:2.5rem;" />
+                <div>
+                    <MudText Typo="Typo.caption">Negociações</MudText>
+                    <MudText Typo="Typo.h5">@_metrics.ChatSessions</MudText>
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private AdminMetrics _metrics = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // TODO: carregar métricas reais da API de admin
+        await Task.CompletedTask;
+    }
+
+    private sealed record AdminMetrics(int Users = 0, int Products = 0, int Orders = 0, int ChatSessions = 0);
+}

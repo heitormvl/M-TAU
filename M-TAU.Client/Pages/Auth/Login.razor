@@ -1,0 +1,89 @@
+@page "/login"
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>Entrar — M-TAU</PageTitle>
+
+<MudGrid Justify="Justify.Center">
+    <MudItem xs="12" sm="8" md="5">
+        <MudCard Elevation="4" Class="pa-4">
+            <MudCardHeader>
+                <MudText Typo="Typo.h5">Entrar na sua conta</MudText>
+            </MudCardHeader>
+            <MudCardContent>
+                <EditForm Model="_model" OnValidSubmit="SubmitAsync">
+                    <DataAnnotationsValidator />
+                    <MudStack Spacing="3">
+                        <MudTextField @bind-Value="_model.Email" Label="E-mail" Variant="Variant.Outlined"
+                                      InputType="InputType.Email" autocomplete="email"
+                                      For="@(() => _model.Email)"
+                                      aria-label="Endereço de e-mail" />
+                        <MudTextField @bind-Value="_model.Password" Label="Senha" Variant="Variant.Outlined"
+                                      InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                      Adornment="Adornment.End"
+                                      AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                      OnAdornmentClick="@(() => _showPassword = !_showPassword)"
+                                      autocomplete="current-password"
+                                      For="@(() => _model.Password)"
+                                      aria-label="Senha" />
+                        <ValidationSummary />
+                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                                   Color="Color.Primary" FullWidth="true"
+                                   Disabled="_submitting"
+                                   aria-label="Entrar">
+                            @(_submitting ? "Entrando…" : "Entrar")
+                        </MudButton>
+                        <MudText Align="Align.Center" Typo="Typo.body2">
+                            Não tem conta?
+                            <MudLink Href="/register">Cadastre-se</MudLink>
+                        </MudText>
+                    </MudStack>
+                </EditForm>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private readonly LoginModel _model = new();
+    private bool _showPassword;
+    private bool _submitting;
+
+    private async Task SubmitAsync()
+    {
+        _submitting = true;
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/auth/login", _model);
+            if (response.IsSuccessStatusCode)
+            {
+                // TODO: armazenar JWT e redirecionar baseado no papel do usuário
+                Snackbar.Add("Login realizado com sucesso!", Severity.Success);
+                Nav.NavigateTo("/");
+            }
+            else
+            {
+                Snackbar.Add("E-mail ou senha inválidos.", Severity.Error);
+            }
+        }
+        catch
+        {
+            Snackbar.Add("Erro ao conectar ao servidor.", Severity.Error);
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private sealed class LoginModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "E-mail é obrigatório.")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "E-mail inválido.")]
+        public string Email { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Senha é obrigatória.")]
+        public string Password { get; set; } = string.Empty;
+    }
+}

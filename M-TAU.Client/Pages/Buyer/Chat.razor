@@ -1,0 +1,103 @@
+@page "/buyer/chat/{SessionId:guid}"
+@page "/seller/chat/{SessionId:guid}"
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<PageTitle>Chat — M-TAU</PageTitle>
+
+<MudPaper Elevation="2" Class="d-flex flex-column" Style="height:calc(100vh - 200px); overflow:hidden;">
+    @* Header *@
+    <MudAppBar Color="Color.Default" Fixed="false" Dense="true" Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
+                       Href="/buyer/chat" aria-label="Voltar para negociações" />
+        <MudText Typo="Typo.h6" Class="ml-2">Negociação</MudText>
+    </MudAppBar>
+
+    @* Messages *@
+    <div id="chat-messages" role="log" aria-live="polite" aria-label="Mensagens do chat"
+         style="flex:1; overflow-y:auto; padding:16px;">
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else
+        {
+            @foreach (var msg in _messages)
+            {
+                <ChatBubble Message="@msg" IsOwn="@(msg.SenderId == _currentUserId)" />
+            }
+        }
+    </div>
+
+    @* Input *@
+    <MudDivider />
+    <div class="pa-3 d-flex gap-2">
+        <MudTextField @bind-Value="_newMessage" Placeholder="Digite uma mensagem…"
+                      Variant="Variant.Outlined" Margin="Margin.Dense"
+                      Style="flex:1;"
+                      OnKeyDown="HandleKeyDown"
+                      aria-label="Campo de mensagem"
+                      autocomplete="off" />
+        <MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary"
+                       OnClick="SendAsync" Disabled="_sending"
+                       aria-label="Enviar mensagem" />
+    </div>
+</MudPaper>
+
+@code {
+    [Parameter] public Guid SessionId { get; set; }
+
+    private List<MessageResponseDto> _messages = [];
+    private bool _loading = true;
+    private bool _sending;
+    private string _newMessage = string.Empty;
+    private readonly Guid _currentUserId = Guid.Empty; // TODO: obter do contexto de autenticação
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var session = await Http.GetFromJsonAsync<ChatSessionResponseDto>($"api/chatsessions/{SessionId}");
+            _messages = session?.Messages?.OrderBy(m => m.SentAt).ToList() ?? [];
+        }
+        catch
+        {
+            Snackbar.Add("Erro ao carregar mensagens.", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SendAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newMessage)) return;
+        _sending = true;
+        try
+        {
+            var dto = new MessageCreateDto(SessionId, _currentUserId, _newMessage);
+            var response = await Http.PostAsJsonAsync("api/messages", dto);
+            if (response.IsSuccessStatusCode)
+            {
+                var saved = await response.Content.ReadFromJsonAsync<MessageResponseDto>();
+                if (saved is not null) _messages.Add(saved);
+                _newMessage = string.Empty;
+            }
+            else
+            {
+                Snackbar.Add("Erro ao enviar mensagem.", Severity.Error);
+            }
+        }
+        finally
+        {
+            _sending = false;
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+            await SendAsync();
+    }
+}

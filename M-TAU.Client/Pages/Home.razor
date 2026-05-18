@@ -1,7 +1,119 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>M-TAU — Marketplace de Tecnologias Assistivas</PageTitle>
 
-<h1>Hello, world!</h1>
+<MudStack Spacing="6">
+    @* Hero Banner *@
+    <MudPaper Class="pa-8 rounded-lg" Style="background: linear-gradient(135deg,#1565c0,#42a5f5); color:white;" Elevation="4">
+        <MudGrid Justify="Justify.Center">
+            <MudItem xs="12" md="7">
+                <MudText Typo="Typo.h3" GutterBottom="true">Tecnologias Assistivas Usadas</MudText>
+                <MudText Typo="Typo.subtitle1" Class="mb-6">
+                    Conectamos quem vende equipamentos seminovos a quem precisa deles com custo reduzido.
+                </MudText>
+                <MudStack Row="true" Spacing="2">
+                    <MudTextField @bind-Value="_search" Placeholder="Buscar equipamento..." Variant="Variant.Outlined"
+                                  Style="background:white; border-radius:4px; flex:1;"
+                                  aria-label="Campo de busca rápida" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large"
+                               StartIcon="@Icons.Material.Filled.Search" OnClick="GoSearch"
+                               aria-label="Pesquisar">
+                        Pesquisar
+                    </MudButton>
+                </MudStack>
+            </MudItem>
+            <MudItem xs="12" md="5" Class="d-flex justify-center">
+                <MudIcon Icon="@Icons.Material.Filled.Accessible" Style="font-size:8rem; opacity:.4;" />
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
 
-Welcome to your new app.
+    @* Category chips *@
+    <div>
+        <MudText Typo="Typo.h5" GutterBottom="true">Navegar por categoria</MudText>
+        <MudStack Row="true" Spacing="2" Wrap="Wrap.Wrap">
+            @foreach (DisabilityCategory cat in Enum.GetValues<DisabilityCategory>())
+            {
+                <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined"
+                         OnClick="@(() => Nav.NavigateTo($"/catalog?category={cat}"))"
+                         aria-label="@($"Filtrar por deficiência {cat}")">
+                    @CategoryLabel(cat)
+                </MudChip>
+            }
+        </MudStack>
+    </div>
+
+    @* Recent products *@
+    <div>
+        <MudText Typo="Typo.h5" GutterBottom="true">Produtos recentes</MudText>
+        @if (_recentProducts is null)
+        {
+            <MudGrid>
+                @for (int i = 0; i < 4; i++)
+                {
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="260px" />
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+        else if (_recentProducts.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">Nenhum produto disponível no momento.</MudAlert>
+        }
+        else
+        {
+            <MudGrid>
+                @foreach (var product in _recentProducts)
+                {
+                    <MudItem xs="12" sm="6" md="3">
+                        <ProductCard Product="@product" />
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+        <div class="d-flex justify-end mt-4">
+            <MudButton Href="/catalog" Variant="Variant.Text" Color="Color.Primary"
+                       EndIcon="@Icons.Material.Filled.ArrowForward">
+                Ver todos os produtos
+            </MudButton>
+        </div>
+    </div>
+</MudStack>
+
+@inject NavigationManager Nav
+@inject HttpClient Http
+
+@code {
+    private string _search = string.Empty;
+    private IReadOnlyCollection<ProductResponseDto>? _recentProducts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _recentProducts = await Http.GetFromJsonAsync<IReadOnlyCollection<ProductResponseDto>>(
+                "api/products?pageNumber=1&pageSize=8") ?? [];
+        }
+        catch
+        {
+            _recentProducts = [];
+        }
+    }
+
+    private void GoSearch()
+    {
+        if (!string.IsNullOrWhiteSpace(_search))
+            Nav.NavigateTo($"/catalog?q={Uri.EscapeDataString(_search)}");
+    }
+
+    private static string CategoryLabel(DisabilityCategory cat) => cat switch
+    {
+        DisabilityCategory.Physical  => "Física",
+        DisabilityCategory.Visual    => "Visual",
+        DisabilityCategory.Auditory  => "Auditiva",
+        DisabilityCategory.Cognitive => "Cognitiva",
+        _                            => cat.ToString()
+    };
+}
+

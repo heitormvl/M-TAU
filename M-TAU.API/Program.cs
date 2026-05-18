@@ -1,3 +1,4 @@
+using Scalar.AspNetCore;
 using System.Text;
 using M_TAU.Application;
 using M_TAU.Infrastructure;
@@ -63,6 +64,7 @@ app.UseExceptionHandler(err => err.Run(async ctx =>
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();

@@ -1,0 +1,209 @@
+@page "/seller/products/new"
+@page "/seller/products/{ProductId:guid}/edit"
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_isEdit ? "Editar Anúncio" : "Novo Anúncio") — M-TAU</PageTitle>
+
+<MudBreadcrumbs Items="@_breadcrumbs" Class="mb-4" />
+<MudText Typo="Typo.h4" GutterBottom="true">@(_isEdit ? "Editar Anúncio" : "Novo Anúncio")</MudText>
+
+@if (_loadingExisting)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <EditForm Model="_form" OnValidSubmit="SubmitAsync">
+        <DataAnnotationsValidator />
+        <MudGrid>
+            @* Basic info *@
+            <MudItem xs="12">
+                <MudCard Elevation="2" Class="pa-4">
+                    <MudCardHeader><MudText Typo="Typo.h6">Informações básicas</MudText></MudCardHeader>
+                    <MudCardContent>
+                        <MudGrid>
+                            <MudItem xs="12" md="8">
+                                <MudTextField @bind-Value="_form.Title" Label="Título do anúncio"
+                                              Variant="Variant.Outlined"
+                                              For="@(() => _form.Title)"
+                                              aria-label="Título do anúncio" />
+                            </MudItem>
+                            <MudItem xs="12" md="4">
+                                <MudNumericField T="decimal" @bind-Value="_form.Price" Label="Preço (R$)"
+                                                 Variant="Variant.Outlined" Min="0.01m"
+                                                 For="@(() => _form.Price)"
+                                                 aria-label="Preço do produto" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="_form.Description" Label="Descrição"
+                                              Variant="Variant.Outlined" Lines="4"
+                                              For="@(() => _form.Description)"
+                                              aria-label="Descrição do produto" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            @* Technical spec *@
+            <MudItem xs="12">
+                <MudCard Elevation="2" Class="pa-4">
+                    <MudCardHeader><MudText Typo="Typo.h6">Especificações técnicas</MudText></MudCardHeader>
+                    <MudCardContent>
+                        <MudItem xs="12" Class="mb-4">
+                            <MudSelect T="DisabilityCategory" @bind-Value="_form.Category"
+                                       Label="Categoria de deficiência" Variant="Variant.Outlined"
+                                       aria-label="Categoria de deficiência">
+                                @foreach (DisabilityCategory cat in Enum.GetValues<DisabilityCategory>())
+                                {
+                                    <MudSelectItem Value="@cat">@CategoryLabel(cat)</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <TechnicalSpecForm Category="_form.Category"
+                                           @bind-Measures="_measures"
+                                           @bind-WeightCapacity="_weightCapacity"
+                                           @bind-UsageTime="_usageTime" />
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            @* Photos *@
+            <MudItem xs="12">
+                <MudCard Elevation="2" Class="pa-4">
+                    <MudCardHeader><MudText Typo="Typo.h6">Fotos</MudText></MudCardHeader>
+                    <MudCardContent>
+                        <PhotoUploader FilesChanged="OnFilesChanged" />
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            @* Location *@
+            <MudItem xs="12">
+                <MudCard Elevation="2" Class="pa-4">
+                    <MudCardHeader><MudText Typo="Typo.h6">Localização</MudText></MudCardHeader>
+                    <MudCardContent>
+                        <CepLookup @bind-Cep="_cep" @bind-City="_city" @bind-Neighborhood="_neighborhood" />
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12">
+                <ValidationSummary />
+                <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                    <MudButton Variant="Variant.Text" OnClick="@(() => Nav.NavigateTo("/seller/products"))">
+                        Cancelar
+                    </MudButton>
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                               Color="Color.Primary" Disabled="_saving"
+                               aria-label="@(_isEdit ? "Salvar alterações" : "Publicar anúncio")">
+                        @(_saving ? "Salvando…" : (_isEdit ? "Salvar alterações" : "Publicar anúncio"))
+                    </MudButton>
+                </MudStack>
+            </MudItem>
+        </MudGrid>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public Guid? ProductId { get; set; }
+
+    private bool _isEdit => ProductId.HasValue;
+    private bool _loadingExisting;
+    private bool _saving;
+    private IReadOnlyList<IBrowserFile>? _photos;
+    private string _cep = string.Empty, _city = string.Empty, _neighborhood = string.Empty;
+    private string? _measures;
+    private double? _weightCapacity;
+    private string? _usageTime;
+    private readonly ProductFormModel _form = new();
+    private List<BreadcrumbItem> _breadcrumbs = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _breadcrumbs =
+        [
+            new("Início", "/"),
+            new("Meus Anúncios", "/seller/products"),
+            new(_isEdit ? "Editar" : "Novo", null, disabled: true)
+        ];
+
+        if (_isEdit)
+        {
+            _loadingExisting = true;
+            try
+            {
+                var p = await Http.GetFromJsonAsync<ProductResponseDto>($"api/products/{ProductId}");
+                if (p is not null)
+                {
+                    _form.Title = p.Title;
+                    _form.Price = p.Price;
+                    _form.Description = p.Description ?? string.Empty;
+                    if (p.TechnicalSpec is { } ts)
+                    {
+                        _form.Category = ts.Category;
+                        _measures = ts.Measures;
+                        _weightCapacity = ts.WeightCapacity > 0 ? ts.WeightCapacity : null;
+                        _usageTime = ts.UsageTime;
+                    }
+                }
+            }
+            finally { _loadingExisting = false; }
+        }
+    }
+
+    private void OnFilesChanged(IReadOnlyList<IBrowserFile> files) => _photos = files;
+
+    private async Task SubmitAsync()
+    {
+        _saving = true;
+        try
+        {
+            var spec = new TechnicalSpecCreateDto(_form.Category, _measures, _weightCapacity, _usageTime);
+            var dto = new ProductCreateDto(_form.Title, _form.Price, Guid.Empty /* sellerId */, _form.Description, spec);
+            HttpResponseMessage response;
+            if (_isEdit)
+                response = await Http.PutAsJsonAsync($"api/products/{ProductId}", dto);
+            else
+                response = await Http.PostAsJsonAsync("api/products", dto);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add(_isEdit ? "Anúncio atualizado!" : "Anúncio publicado!", Severity.Success);
+                Nav.NavigateTo("/seller/products");
+            }
+            else
+            {
+                Snackbar.Add("Erro ao salvar anúncio.", Severity.Error);
+            }
+        }
+        finally { _saving = false; }
+    }
+
+    private static string CategoryLabel(DisabilityCategory cat) => cat switch
+    {
+        DisabilityCategory.Physical  => "Física",
+        DisabilityCategory.Visual    => "Visual",
+        DisabilityCategory.Auditory  => "Auditiva",
+        DisabilityCategory.Cognitive => "Cognitiva",
+        _                            => cat.ToString()
+    };
+
+    private sealed class ProductFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Título é obrigatório.")]
+        [System.ComponentModel.DataAnnotations.StringLength(120, MinimumLength = 3)]
+        public string Title { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.Range(0.01, double.MaxValue, ErrorMessage = "Preço deve ser maior que zero.")]
+        public decimal Price { get; set; }
+
+        [System.ComponentModel.DataAnnotations.StringLength(1000)]
+        public string Description { get; set; } = string.Empty;
+
+        public DisabilityCategory Category { get; set; } = DisabilityCategory.Physical;
+    }
+}
