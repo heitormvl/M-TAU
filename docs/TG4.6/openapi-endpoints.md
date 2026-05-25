@@ -1,83 +1,150 @@
 # Spec de Endpoints — M-TAU API
 
-> Documentação complementar ao Scalar (auto-gerado em `/scalar` no ambiente dev).  
+> Gerado a partir do `v1.json` (OpenAPI 3.1.1) exportado pelo Scalar em `http://localhost:5144/scalar`.  
+> O arquivo `v1.json` original está nesta mesma pasta.  
 > Base URL dev: `http://localhost:5144`
 
 ---
 
 ## Autenticação
 
-Todos os endpoints protegidos exigem o header:
+Endpoints protegidos exigem:
 
 ```
 Authorization: Bearer <JWT>
 ```
 
-O hub SignalR aceita o token via query string: `?access_token=<JWT>`
+O hub SignalR aceita via query string:
+
+```
+ws://localhost:5144/hubs/chat?access_token=<JWT>
+```
+
+---
+
+## Enumerações
+
+| Enum | Valores (inteiro) |
+|------|-------------------|
+| `UserType` | 0 = Buyer · 1 = Seller · 2 = Admin |
+| `ProductStatus` | 0 = Active · 1 = Paused · 2 = Sold · 3 = Removed |
+| `OrderStatus` | 0 = Pending · 1 = Confirmed · 2 = Completed · 3 = Cancelled |
+| `MessageStatus` | 0 = Sent · 1 = Read |
+| `DisabilityCategory` | 0 = Física · 1 = Visual · 2 = Auditiva · 3 = Cognitiva |
+
+---
+
+## Admin
+
+### `GET /api/Admin/metrics` — `[Authorize(Roles="Admin")]`
+
+**Response 200:**
+```json
+{
+  "users": 12,
+  "products": 34,
+  "orders": 8,
+  "chatSessions": 5
+}
+```
+
+### `PATCH /api/Admin/products/{id}/moderate` — `[Authorize(Roles="Admin")]`
+
+| Parâmetro | Em | Tipo |
+|-----------|----|------|
+| `id` | path | `uuid` |
+
+**Body:**
+```json
+{ "status": 1 }
+```
+*(ver enum `ProductStatus`)*
 
 ---
 
 ## Auth
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| POST | `/api/auth/login` | público | Autentica usuário; retorna JWT e dados do usuário |
+### `POST /api/Auth/login` — público
 
-**Body login:**
+**Body:**
 ```json
 { "email": "string", "password": "string" }
 ```
+
 **Response 200:**
 ```json
-{ "token": "string", "expiresAt": "datetime", "user": { "id", "name", "email", "role" } }
+{
+  "token": "eyJ...",
+  "expiresAt": "2026-06-01T00:00:00Z",
+  "user": { "id": "uuid", "name": "string", "email": "string", "role": 0, "createdAt": "datetime" }
+}
 ```
 
 ---
 
 ## Usuários
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| POST | `/api/users` | público | Cadastra novo usuário (register) |
-| GET | `/api/users/{id}` | autenticado | Retorna dados do usuário |
-| GET | `/api/users` | autenticado | Lista todos os usuários |
-| PUT | `/api/users/{id}/name` | autenticado | Atualiza nome |
-| PUT | `/api/users/{id}/email` | autenticado | Atualiza e-mail |
-| DELETE | `/api/users/{id}` | autenticado | **LGPD:** anonimiza dados pessoais (soft delete) |
+### `POST /api/Users` — público (registro)
 
-**Body POST /api/users:**
+**Body (`UserCreateDto`):**
 ```json
-{ "name": "string", "email": "string", "password": "string", "role": "Buyer|Seller|Admin" }
+{ "name": "string", "email": "string", "password": "string", "role": 1 }
 ```
+
+**Response 200 (`UserResponseDto`):**
+```json
+{ "id": "uuid", "name": "string", "email": "string", "role": 1, "createdAt": "datetime" }
+```
+
+### `GET /api/Users` — autenticado
+
+| Query | Tipo | Descrição |
+|-------|------|-----------|
+| `Name` | string | filtro por nome |
+| `Email` | string | filtro por e-mail |
+| `Role` | int | filtro por tipo (UserType) |
+| `PageNumber` | int | página (default 1) |
+| `PageSize` | int | itens por página (default 10) |
+
+**Response 200:** `UserResponseDto[]`
+
+### `GET /api/Users/{id}` — autenticado
+
+**Response 200:** `UserResponseDto`
+
+### `PUT /api/Users/{id}/name` — autenticado
+
+**Body:** `{ "name": "string" }`
+
+### `PUT /api/Users/{id}/email` — autenticado
+
+**Body:** `{ "email": "string" }`
+
+### `DELETE /api/Users/{id}` — autenticado
+
+**LGPD:** anonimiza `name`, `email` e `passwordHash` preservando integridade referencial.
 
 ---
 
 ## Produtos
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| GET | `/api/products` | público | Lista produtos paginados com filtros |
-| GET | `/api/products/{id}` | público | Retorna produto por ID |
-| POST | `/api/products` | Seller | Cria novo anúncio |
-| PUT | `/api/products/{id}` | Seller | Atualiza anúncio |
-| PATCH | `/api/products/{id}/status` | Seller/Admin | Altera status (Active, Paused, Sold, Removed) |
-| POST | `/api/products/{id}/photos` | Seller | Adiciona foto via URL |
-| POST | `/api/products/{id}/photos/upload` | Seller | Upload de foto (multipart/form-data) |
-| DELETE | `/api/products/{id}/photos/{photoId}` | Seller | Remove foto |
-| DELETE | `/api/products/{id}` | Seller/Admin | Remove anúncio (soft delete) |
+### `GET /api/Products` — público (paginado)
 
-**Query GET /api/products:**
-```
-?category=Fisica|Visual|Auditiva|Cognitiva
-&search=string
-&pageNumber=1
-&pageSize=12
-```
+| Query | Tipo | Descrição |
+|-------|------|-----------|
+| `Title` | string | busca por título |
+| `MinPrice` | double | preço mínimo |
+| `MaxPrice` | double | preço máximo |
+| `Status` | int | `ProductStatus` |
+| `SellerId` | uuid | filtro por vendedor |
+| `Category` | int | `DisabilityCategory` |
+| `PageNumber` | int | |
+| `PageSize` | int | |
 
-**Response paginado:**
+**Response 200 (`PaginatedResultOfProductResponseDto`):**
 ```json
 {
-  "items": [...],
+  "items": [ { "id", "title", "price", "status", "sellerId", "description", "technicalSpec", "photos" } ],
   "totalCount": 42,
   "pageNumber": 1,
   "pageSize": 12,
@@ -85,85 +152,269 @@ O hub SignalR aceita o token via query string: `?access_token=<JWT>`
 }
 ```
 
+### `POST /api/Products` — Seller (`ProductCreateDto`)
+
+```json
+{
+  "title": "Cadeira de rodas dobrável",
+  "price": 1450.00,
+  "sellerId": "uuid",
+  "description": "Ótimo estado, pouco uso.",
+  "technicalSpec": {
+    "category": 0,
+    "measures": "54x42x90 cm",
+    "weightCapacity": 120.0,
+    "usageTime": "1-3 anos"
+  }
+}
+```
+
+**Response 200:** `ProductResponseDto`
+
+### `GET /api/Products/{id}` — público
+
+**Response 200:** `ProductResponseDto`
+
+### `PUT /api/Products/{id}` — Seller
+
+**Body:** `ProductCreateDto` (mesmos campos do POST)
+
+### `PATCH /api/Products/{id}/status` — Seller/Admin
+
+**Body:** `0|1|2|3` (enum `ProductStatus` direto)
+
+### `POST /api/Products/{id}/photos` — Seller (via URL)
+
+**Body (`PhotoCreateDto`):**
+```json
+{ "url": "https://...", "isMain": false }
+```
+
+### `POST /api/Products/{id}/photos/upload` — Seller (multipart)
+
+| Query | Tipo |
+|-------|------|
+| `isMain` | boolean |
+
+**Body:** `multipart/form-data` com campo `file` (binary)
+
+### `DELETE /api/Products/{id}/photos/{photoId}` — Seller
+
+### `DELETE /api/Products/{id}` — Seller/Admin
+
 ---
 
 ## Pedidos
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| GET | `/api/orders` | autenticado | Lista pedidos do usuário (paginado) |
-| GET | `/api/orders/{id}` | autenticado | Retorna pedido por ID |
-| POST | `/api/orders` | autenticado | Cria pedido (Buyer) |
-| PATCH | `/api/orders/{id}/status` | autenticado | Atualiza status do pedido |
+### `GET /api/Orders` — autenticado (paginado)
+
+| Query | Tipo |
+|-------|------|
+| `BuyerId` | uuid |
+| `ProductId` | uuid |
+| `Status` | int (`OrderStatus`) |
+| `PageNumber` | int |
+| `PageSize` | int |
+
+**Response 200:** `PaginatedResultOfOrderResponseDto`
+
+### `POST /api/Orders` — autenticado (`OrderCreateDto`)
+
+```json
+{
+  "buyerId": "uuid",
+  "productId": "uuid",
+  "totalAmount": 1450.00
+}
+```
+
+**Response 200 (`OrderResponseDto`):**
+```json
+{ "id": "uuid", "buyerId": "uuid", "productId": "uuid", "totalAmount": 1450.00, "status": 0, "orderDate": "datetime" }
+```
+
+### `GET /api/Orders/{id}` — autenticado
+
+**Response 200:** `OrderResponseDto`
+
+### `PATCH /api/Orders/{id}/status` — autenticado
+
+**Body:** inteiro do enum `OrderStatus`
 
 ---
 
 ## Pagamentos
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| POST | `/api/payments/checkout` | autenticado | Gera preferência e retorna URL do sandbox Mercado Pago |
-| POST | `/api/payments/webhook` | público (gateway) | Recebe confirmação; atualiza Order → Completed e Product → Sold |
+### `POST /api/Payments/checkout` — autenticado
 
-**Body webhook:**
+**Body (`PaymentCheckoutRequestDto`):**
 ```json
-{ "orderId": "guid", "status": "approved|paid|completed|cancelled|rejected" }
+{ "orderId": "uuid" }
 ```
+
+**Response 200 (`PaymentCheckoutResponseDto`):**
+```json
+{ "orderId": "uuid", "checkoutUrl": "https://sandbox.mercadopago.com.br/...", "provider": "MercadoPago" }
+```
+
+### `POST /api/Payments/webhook` — público (gateway)
+
+**Body (`PaymentWebhookDto`):**
+```json
+{ "orderId": "uuid", "status": "approved", "externalReference": "string|null" }
+```
+
+Status reconhecidos: `approved` / `paid` / `completed` → `Order.Completed` + `Product.Sold`  
+`cancelled` / `rejected` → `Order.Cancelled`
 
 ---
 
 ## Chat (REST)
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| GET | `/api/chatsessions` | autenticado | Lista sessões do usuário |
-| GET | `/api/chatsessions/{id}` | autenticado | Retorna sessão por ID |
-| POST | `/api/chatsessions` | autenticado | Cria nova sessão entre Buyer e Seller |
-| POST | `/api/chatsessions/{id}/messages` | autenticado | Envia mensagem via REST (fallback) |
-| GET | `/api/messages?sessionId={id}` | autenticado | Lista mensagens de uma sessão |
-| PATCH | `/api/messages/{id}/status` | autenticado | Atualiza status da mensagem (Read) |
+### `GET /api/ChatSessions` — autenticado (paginado)
+
+| Query | Tipo |
+|-------|------|
+| `BuyerId` | uuid |
+| `SellerId` | uuid |
+| `ProductId` | uuid |
+| `PageNumber` | int |
+| `PageSize` | int |
+
+**Response 200:** `ChatSessionResponseDto[]`
+
+### `POST /api/ChatSessions` — autenticado
+
+**Body (`ChatSessionCreateDto`):**
+```json
+{ "buyerId": "uuid", "sellerId": "uuid", "productId": "uuid" }
+```
+
+**Response 200 (`ChatSessionResponseDto`):**
+```json
+{ "id": "uuid", "buyerId": "uuid", "sellerId": "uuid", "productId": "uuid", "createdAt": "datetime", "messages": [] }
+```
+
+### `GET /api/ChatSessions/{id}` — autenticado
+
+**Response 200:** `ChatSessionResponseDto`
+
+### `POST /api/ChatSessions/{id}/messages` — autenticado (fallback REST)
+
+**Body (`MessageCreateDto`):**
+```json
+{ "chatSessionId": "uuid", "senderId": "uuid", "content": "string" }
+```
+
+**Response 200:** `MessageResponseDto`
+
+### `GET /api/Messages` — autenticado
+
+| Query | Tipo |
+|-------|------|
+| `sessionId` | uuid |
+
+**Response 200:** `MessageResponseDto[]`
+
+### `PATCH /api/Messages/{id}/status` — autenticado
+
+**Body:** inteiro do enum `MessageStatus` (0 = Sent, 1 = Read)
 
 ---
 
-## Chat (Tempo Real — SignalR)
+## Chat (Tempo Real — SignalR Hub)
 
-**Hub:** `ws://localhost:5144/hubs/chat?access_token=<JWT>`
+**Endpoint:** `ws://localhost:5144/hubs/chat?access_token=<JWT>`
 
-| Método do Hub | Direção | Payload | Descrição |
-|---------------|---------|---------|-----------|
-| `JoinSession` | Client → Server | `{ sessionId }` | Entra no grupo da sessão |
-| `LeaveSession` | Client → Server | `{ sessionId }` | Sai do grupo |
-| `SendMessage` | Client → Server | `{ sessionId, content }` | Envia mensagem; persiste no DB |
-| `ReceiveMessage` | Server → Client | `{ sender, content, sentAt }` | Broadcast para todos no grupo |
+| Método (Client → Server) | Payload | Descrição |
+|--------------------------|---------|-----------|
+| `JoinSession` | `{ sessionId: "uuid" }` | Entra no grupo da sessão |
+| `LeaveSession` | `{ sessionId: "uuid" }` | Sai do grupo |
+| `SendMessage` | `{ sessionId: "uuid", content: "string" }` | Envia; persiste no DB e faz broadcast |
+
+| Evento (Server → Client) | Payload | Descrição |
+|--------------------------|---------|-----------|
+| `ReceiveMessage` | `{ sender: "string", content: "string", sentAt: "datetime" }` | Mensagem recebida em tempo real |
 
 ---
 
 ## Feedbacks
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| GET | `/api/feedbacks` | autenticado | Lista feedbacks |
-| GET | `/api/feedbacks/{id}` | autenticado | Retorna feedback por ID |
-| POST | `/api/feedbacks` | autenticado | Cria avaliação (exige Order.Status == Completed; 409 caso contrário) |
+### `GET /api/Feedbacks` — autenticado
 
-**Body POST:**
+| Query | Tipo |
+|-------|------|
+| `FromUserId` | uuid |
+| `OrderId` | uuid |
+| `MinRating` | int |
+| `PageNumber` | int |
+| `PageSize` | int |
+
+**Response 200:** `FeedbackResponseDto[]`
+
+### `POST /api/Feedbacks` — autenticado
+
+> ⚠️ Retorna **409 Conflict** se `Order.Status != Completed`.
+
+**Body (`FeedbackCreateDto`):**
 ```json
-{ "orderId": "guid", "rating": 1–5, "comment": "string" }
+{ "rating": 5, "fromUserId": "uuid", "comment": "Excelente produto!", "orderId": "uuid" }
 ```
 
----
+**Response 200 (`FeedbackResponseDto`):**
+```json
+{ "id": "uuid", "rating": 5, "fromUserId": "uuid", "comment": "string", "orderId": "uuid" }
+```
 
-## Admin
-
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| GET | `/api/admin/metrics` | Admin | Contagens: users, products, orders, chats |
-| PATCH | `/api/admin/products/{id}/moderate` | Admin | Moderação: força status do produto |
+### `GET /api/Feedbacks/{id}` — autenticado
 
 ---
 
 ## Seller
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| GET | `/api/seller/metrics` | Seller/Admin | Métricas do seller autenticado: anúncios ativos, pedidos pendentes, total vendas |
+### `GET /api/Seller/metrics` — `[Authorize(Roles="Seller,Admin")]`
+
+**Response 200 (`SellerMetricsDto`):**
+```json
+{
+  "activeListings": 3,
+  "totalSales": 7,
+  "pendingOrders": 2,
+  "revenue": 5200.00
+}
+```
+
+---
+
+## Schemas completos
+
+### `TechnicalSpecCreateDto`
+```json
+{
+  "category": 0,
+  "measures": "string|null",
+  "weightCapacity": 120.0,
+  "usageTime": "string|null"
+}
+```
+
+### `TechnicalSpecResponseDto`
+```json
+{
+  "id": "uuid",
+  "category": 0,
+  "weightCapacity": 120.0,
+  "measures": "string|null",
+  "usageTime": "string|null"
+}
+```
+
+### `PhotoCreateDto`
+```json
+{ "url": "string", "isMain": false }
+```
+
+### `PhotoResponseDto`
+```json
+{ "id": "uuid", "url": "string", "isMain": true }
+```
