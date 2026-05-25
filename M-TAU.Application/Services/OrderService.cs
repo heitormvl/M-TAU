@@ -16,8 +16,19 @@ public sealed class OrderService(IOrderRepository orderRepository, IMapper mappe
 
     public async Task<IReadOnlyCollection<OrderResponseDto>> GetAllAsync(OrderFilterDto filter, CancellationToken cancellationToken = default)
     {
-        var orders = await orderRepository.ListAsync(cancellationToken);
-        return mapper.Map<IReadOnlyCollection<OrderResponseDto>>(orders);
+        IReadOnlyCollection<Order> orders;
+        if (filter.BuyerId.HasValue)
+            orders = await orderRepository.ListByBuyerAsync(filter.BuyerId.Value, cancellationToken);
+        else
+            orders = await orderRepository.ListAsync(cancellationToken);
+
+        var query = orders.AsEnumerable();
+        if (filter.Status.HasValue)
+            query = query.Where(o => o.Status == filter.Status.Value);
+        if (filter.ProductId.HasValue)
+            query = query.Where(o => o.ProductId == filter.ProductId.Value);
+
+        return mapper.Map<IReadOnlyCollection<OrderResponseDto>>(query.ToList());
     }
 
     public async Task<OrderResponseDto> CreateAsync(OrderCreateDto createDto, CancellationToken cancellationToken = default)

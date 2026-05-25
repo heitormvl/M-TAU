@@ -3,6 +3,7 @@
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>@(_isEdit ? "Editar Anúncio" : "Novo Anúncio") — M-TAU</PageTitle>
 
@@ -120,9 +121,15 @@ else
     private string? _usageTime;
     private readonly ProductFormModel _form = new();
     private List<BreadcrumbItem> _breadcrumbs = [];
+    private Guid _currentSellerId;
 
     protected override async Task OnInitializedAsync()
     {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        var sub = state.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(sub, out var id))
+            _currentSellerId = id;
+
         _breadcrumbs =
         [
             new("Início", "/"),
@@ -162,7 +169,7 @@ else
         try
         {
             var spec = new TechnicalSpecCreateDto(_form.Category, _measures, _weightCapacity, _usageTime);
-            var dto = new ProductCreateDto(_form.Title, _form.Price, Guid.Empty /* sellerId */, _form.Description, spec);
+            var dto = new ProductCreateDto(_form.Title, _form.Price, _currentSellerId, _form.Description, spec);
             HttpResponseMessage response;
             if (_isEdit)
                 response = await Http.PutAsJsonAsync($"api/products/{ProductId}", dto);

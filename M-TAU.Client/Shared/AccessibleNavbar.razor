@@ -1,4 +1,5 @@
 @inject NavigationManager Nav
+@inject TokenAuthenticationStateProvider AuthProvider
 
 <MudAppBar Color="Color.Primary" Fixed="true" Elevation="4">
     <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
@@ -20,8 +21,20 @@
 
     <MudHidden Breakpoint="Breakpoint.SmAndDown">
         <MudButton Href="/catalog" Color="Color.Inherit" StartIcon="@Icons.Material.Filled.Category">Catálogo</MudButton>
-        <MudButton Href="/login" Color="Color.Inherit" StartIcon="@Icons.Material.Filled.Login">Entrar</MudButton>
-        <MudButton Href="/register" Variant="Variant.Outlined" Color="Color.Inherit" StartIcon="@Icons.Material.Filled.PersonAdd">Cadastrar</MudButton>
+        <AuthorizeView>
+            <Authorized>
+                <MudText Color="Color.Inherit" Class="mx-2" Typo="Typo.body2">
+                    @context.User.FindFirst(ClaimTypes.Email)?.Value
+                </MudText>
+                <MudButton Color="Color.Inherit" StartIcon="@Icons.Material.Filled.Logout"
+                           OnClick="LogoutAsync" aria-label="Sair da conta">Sair</MudButton>
+            </Authorized>
+            <NotAuthorized>
+                <MudButton Href="/login" Color="Color.Inherit" StartIcon="@Icons.Material.Filled.Login">Entrar</MudButton>
+                <MudButton Href="/register" Variant="Variant.Outlined" Color="Color.Inherit"
+                           StartIcon="@Icons.Material.Filled.PersonAdd">Cadastrar</MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
     </MudHidden>
 </MudAppBar>
 
@@ -33,21 +46,39 @@
         <MudNavLink Href="/" Icon="@Icons.Material.Filled.Home" Match="NavLinkMatch.All">Início</MudNavLink>
         <MudNavLink Href="/catalog" Icon="@Icons.Material.Filled.Category">Catálogo</MudNavLink>
         <MudDivider />
-        <MudNavGroup Title="Comprador" Icon="@Icons.Material.Filled.ShoppingCart" Expanded="false">
-            <MudNavLink Href="/buyer/orders">Meus Pedidos</MudNavLink>
-            <MudNavLink Href="/buyer/chat">Minhas Negociações</MudNavLink>
-            <MudNavLink Href="/buyer/profile">Meu Perfil</MudNavLink>
-        </MudNavGroup>
-        <MudNavGroup Title="Vendedor" Icon="@Icons.Material.Filled.Store" Expanded="false">
-            <MudNavLink Href="/seller/dashboard">Dashboard</MudNavLink>
-            <MudNavLink Href="/seller/products">Meus Anúncios</MudNavLink>
-            <MudNavLink Href="/seller/orders">Pedidos Recebidos</MudNavLink>
-            <MudNavLink Href="/seller/chat">Negociações</MudNavLink>
-            <MudNavLink Href="/seller/profile">Perfil</MudNavLink>
-        </MudNavGroup>
+        <AuthorizeView Roles="Buyer">
+            <MudNavGroup Title="Comprador" Icon="@Icons.Material.Filled.ShoppingCart" Expanded="true">
+                <MudNavLink Href="/buyer/orders">Meus Pedidos</MudNavLink>
+                <MudNavLink Href="/buyer/chat">Minhas Negociações</MudNavLink>
+                <MudNavLink Href="/buyer/profile">Meu Perfil</MudNavLink>
+            </MudNavGroup>
+        </AuthorizeView>
+        <AuthorizeView Roles="Seller">
+            <MudNavGroup Title="Vendedor" Icon="@Icons.Material.Filled.Store" Expanded="true">
+                <MudNavLink Href="/seller/dashboard">Dashboard</MudNavLink>
+                <MudNavLink Href="/seller/products">Meus Anúncios</MudNavLink>
+                <MudNavLink Href="/seller/orders">Pedidos Recebidos</MudNavLink>
+                <MudNavLink Href="/seller/chat">Negociações</MudNavLink>
+                <MudNavLink Href="/seller/profile">Perfil</MudNavLink>
+            </MudNavGroup>
+        </AuthorizeView>
+        <AuthorizeView Roles="Admin">
+            <MudNavGroup Title="Administração" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="true">
+                <MudNavLink Href="/admin">Dashboard</MudNavLink>
+                <MudNavLink Href="/admin/products">Produtos</MudNavLink>
+                <MudNavLink Href="/admin/users">Usuários</MudNavLink>
+            </MudNavGroup>
+        </AuthorizeView>
         <MudDivider />
-        <MudNavLink Href="/login" Icon="@Icons.Material.Filled.Login">Entrar</MudNavLink>
-        <MudNavLink Href="/register" Icon="@Icons.Material.Filled.PersonAdd">Cadastrar</MudNavLink>
+        <AuthorizeView>
+            <Authorized>
+                <MudNavLink Icon="@Icons.Material.Filled.Logout" OnClick="LogoutAsync">Sair</MudNavLink>
+            </Authorized>
+            <NotAuthorized>
+                <MudNavLink Href="/login" Icon="@Icons.Material.Filled.Login">Entrar</MudNavLink>
+                <MudNavLink Href="/register" Icon="@Icons.Material.Filled.PersonAdd">Cadastrar</MudNavLink>
+            </NotAuthorized>
+        </AuthorizeView>
     </MudNavMenu>
 </MudDrawer>
 
@@ -56,6 +87,12 @@
     private string _search = string.Empty;
 
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    private async Task LogoutAsync()
+    {
+        await AuthProvider.NotifyUserLoggedOutAsync();
+        Nav.NavigateTo("/login");
+    }
 
     private void GoSearch()
     {

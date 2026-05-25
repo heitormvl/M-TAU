@@ -2,6 +2,7 @@
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
+@inject TokenAuthenticationStateProvider AuthProvider
 
 <PageTitle>Entrar — M-TAU</PageTitle>
 
@@ -58,9 +59,19 @@
             var response = await Http.PostAsJsonAsync("api/auth/login", _model);
             if (response.IsSuccessStatusCode)
             {
-                // TODO: armazenar JWT e redirecionar baseado no papel do usuário
-                Snackbar.Add("Login realizado com sucesso!", Severity.Success);
-                Nav.NavigateTo("/");
+                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                if (result?.Token is not null)
+                {
+                    await AuthProvider.NotifyUserAuthenticatedAsync(result.Token);
+                    var authState = await AuthProvider.GetAuthenticationStateAsync();
+                    var role = authState.User.FindFirst(ClaimTypes.Role)?.Value;
+                    Nav.NavigateTo(role switch
+                    {
+                        "Seller" => "/seller/dashboard",
+                        "Admin"  => "/admin",
+                        _        => "/buyer/orders"
+                    });
+                }
             }
             else
             {
@@ -76,6 +87,8 @@
             _submitting = false;
         }
     }
+
+    private record LoginResponse(string Token);
 
     private sealed class LoginModel
     {

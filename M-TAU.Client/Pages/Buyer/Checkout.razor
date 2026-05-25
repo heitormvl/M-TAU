@@ -2,6 +2,7 @@
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Checkout — M-TAU</PageTitle>
 
@@ -97,9 +98,15 @@ else
     private bool _loadingProduct = true;
     private bool _submitting;
     private readonly CheckoutForm _form = new();
+    private Guid _currentUserId;
 
     protected override async Task OnInitializedAsync()
     {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        var sub = state.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(sub, out var id))
+            _currentUserId = id;
+
         try
         {
             _product = await Http.GetFromJsonAsync<ProductResponseDto>($"api/products/{ProductId}");
@@ -113,13 +120,11 @@ else
         _submitting = true;
         try
         {
-            // TODO: criar Order via API e obter URL do gateway de pagamento
-            var dto = new OrderCreateDto(Guid.Empty /* buyerId from auth */, ProductId, _product!.Price);
+            var dto = new OrderCreateDto(_currentUserId, ProductId, _product!.Price);
             var response = await Http.PostAsJsonAsync("api/orders", dto);
             if (response.IsSuccessStatusCode)
             {
-                // TODO: redirecionar para URL de checkout do gateway
-                Snackbar.Add("Pedido criado! Redirecionando para o pagamento…", Severity.Success);
+                Snackbar.Add("Pedido criado! Integração com gateway de pagamento pendente.", Severity.Success);
                 Nav.NavigateTo("/buyer/orders");
             }
             else
