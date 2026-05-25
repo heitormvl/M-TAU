@@ -42,8 +42,7 @@ public sealed class ChatSessionService(IChatSessionRepository chatSessionReposit
         var session = await chatSessionRepository.GetWithMessagesAsync(messageDto.ChatSessionId, cancellationToken)
             ?? throw new KeyNotFoundException($"ChatSession '{messageDto.ChatSessionId}' not found.");
         var message = new Message(Guid.NewGuid(), messageDto.ChatSessionId, messageDto.SenderId, messageDto.Content);
-        session.AddMessage(message);
-        await chatSessionRepository.UpdateAsync(session, cancellationToken);
+        await chatSessionRepository.AddMessageAsync(message, cancellationToken);
         return mapper.Map<MessageResponseDto>(message);
     }
 }
