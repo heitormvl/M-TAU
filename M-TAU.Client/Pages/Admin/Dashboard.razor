@@ -1,5 +1,7 @@
 @page "/admin"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
 @inject HttpClient Http
+@inject ISnackbar Snackbar
 
 <PageTitle>Painel Administrativo — M-TAU</PageTitle>
 
@@ -63,8 +65,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // TODO: carregar métricas reais da API de admin
-        await Task.CompletedTask;
+        try
+        {
+            var m = await Http.GetFromJsonAsync<AdminMetrics>("api/admin/metrics");
+            if (m is not null) _metrics = m;
+        }
+        catch
+        {
+            Snackbar.Add("Erro ao carregar métricas administrativas.", Severity.Warning);
+        }
     }
 
     private sealed record AdminMetrics(int Users = 0, int Products = 0, int Orders = 0, int ChatSessions = 0);

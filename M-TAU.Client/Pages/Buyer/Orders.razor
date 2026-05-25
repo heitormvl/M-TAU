@@ -67,12 +67,15 @@ else
         _loading = true;
         try
         {
-            _orders = await Http.GetFromJsonAsync<IReadOnlyCollection<OrderResponseDto>>(
-                $"api/orders?buyerId={_currentUserId}&pageNumber={_currentPage}&pageSize=10") ?? [];
+            var paged = await Http.GetFromJsonAsync<PaginatedResult<OrderResponseDto>>(
+                $"api/orders?buyerId={_currentUserId}&pageNumber={_currentPage}&pageSize=10");
+            _orders = paged?.Items ?? [];
+            _totalPages = paged?.TotalPages ?? 1;
         }
         catch
         {
             _orders = [];
+            _totalPages = 1;
         }
         finally
         {

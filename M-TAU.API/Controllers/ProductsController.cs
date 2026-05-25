@@ -1,4 +1,5 @@
 using M_TAU.Application.Dtos.Catalog;
+using M_TAU.Application.Dtos.Common;
 using M_TAU.Application.Services;
 using M_TAU.Domain.Catalog;
 using Microsoft.AspNetCore.Authorization;
@@ -13,7 +14,7 @@ public sealed class ProductsController(IProductService productService) : Control
 {
     [AllowAnonymous]
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyCollection<ProductResponseDto>>> GetAll(
+    public async Task<ActionResult<PaginatedResult<ProductResponseDto>>> GetAll(
         [FromQuery] ProductFilterDto filter,
         CancellationToken cancellationToken)
     {
@@ -67,6 +68,49 @@ public sealed class ProductsController(IProductService productService) : Control
         CancellationToken cancellationToken)
     {
         var result = await productService.AddPhotoAsync(id, photoDto, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("{id:guid}/photos/upload")]
+    [RequestSizeLimit(10_000_000)]
+    public async Task<ActionResult<ProductResponseDto>> UploadPhoto(
+        Guid id,
+        IFormFile file,
+        [FromQuery] bool isMain,
+        [FromServices] IWebHostEnvironment env,
+        CancellationToken cancellationToken)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest(new { message = "File is required." });
+
+        var allowed = new[] { "image/jpeg", "image/png", "image/webp", "image/gif" };
+        if (!allowed.Contains(file.ContentType))
+            return BadRequest(new { message = "Unsupported image type." });
+
+        var webRoot = env.WebRootPath;
+        if (string.IsNullOrEmpty(webRoot))
+            webRoot = Path.Combine(env.ContentRootPath, "wwwroot");
+
+        var uploadsDir = Path.Combine(webRoot, "uploads", "products", id.ToString());
+        Directory.CreateDirectory(uploadsDir);
+
+        var ext = Path.GetExtension(file.FileName);
+        if (string.IsNullOrEmpty(ext))
+            ext = file.ContentType switch
+            {
+                "image/png" => ".png",
+                "image/webp" => ".webp",
+                "image/gif" => ".gif",
+                _ => ".jpg"
+            };
+
+        var filename = $"{Guid.NewGuid()}{ext}";
+        var fullPath = Path.Combine(uploadsDir, filename);
+        await using (var stream = System.IO.File.Create(fullPath))
+            await file.CopyToAsync(stream, cancellationToken);
+
+        var publicUrl = $"{Request.Scheme}://{Request.Host}/uploads/products/{id}/{filename}";
+        var result = await productService.AddPhotoAsync(id, new PhotoCreateDto(publicUrl, isMain), cancellationToken);
         return Ok(result);
     }
 

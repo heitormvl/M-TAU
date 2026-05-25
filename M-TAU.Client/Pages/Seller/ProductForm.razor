@@ -171,22 +171,61 @@ else
             var spec = new TechnicalSpecCreateDto(_form.Category, _measures, _weightCapacity, _usageTime);
             var dto = new ProductCreateDto(_form.Title, _form.Price, _currentSellerId, _form.Description, spec);
             HttpResponseMessage response;
-            if (_isEdit)
-                response = await Http.PutAsJsonAsync($"api/products/{ProductId}", dto);
-            else
-                response = await Http.PostAsJsonAsync("api/products", dto);
+            Guid savedProductId = ProductId ?? Guid.Empty;
 
-            if (response.IsSuccessStatusCode)
+            if (_isEdit)
             {
-                Snackbar.Add(_isEdit ? "Anúncio atualizado!" : "Anúncio publicado!", Severity.Success);
-                Nav.NavigateTo("/seller/products");
+                response = await Http.PutAsJsonAsync($"api/products/{ProductId}", dto);
             }
             else
+            {
+                response = await Http.PostAsJsonAsync("api/products", dto);
+                if (response.IsSuccessStatusCode)
+                {
+                    var saved = await response.Content.ReadFromJsonAsync<ProductResponseDto>();
+                    if (saved is not null) savedProductId = saved.Id;
+                }
+            }
+
+            if (!response.IsSuccessStatusCode)
             {
                 Snackbar.Add("Erro ao salvar anúncio.", Severity.Error);
+                return;
             }
+
+            if (_photos is { Count: > 0 } && savedProductId != Guid.Empty)
+                await UploadPhotosAsync(savedProductId, _photos);
+
+            Snackbar.Add(_isEdit ? "Anúncio atualizado!" : "Anúncio publicado!", Severity.Success);
+            Nav.NavigateTo("/seller/products");
         }
         finally { _saving = false; }
+    }
+
+    private async Task UploadPhotosAsync(Guid productId, IReadOnlyList<IBrowserFile> files)
+    {
+        var first = true;
+        foreach (var file in files)
+        {
+            try
+            {
+                using var content = new MultipartFormDataContent();
+                var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+                var streamContent = new StreamContent(stream);
+                streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+                content.Add(streamContent, "file", file.Name);
+
+                var url = $"api/products/{productId}/photos/upload?isMain={(first ? "true" : "false")}";
+                var res = await Http.PostAsync(url, content);
+                if (!res.IsSuccessStatusCode)
+                    Snackbar.Add($"Falha ao enviar foto {file.Name}", Severity.Warning);
+                first = false;
+            }
+            catch
+            {
+                Snackbar.Add($"Erro ao enviar foto {file.Name}", Severity.Warning);
+            }
+        }
     }
 
     private static string CategoryLabel(DisabilityCategory cat) => cat switch

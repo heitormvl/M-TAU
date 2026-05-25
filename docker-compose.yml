@@ -1,0 +1,34 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: M-TAU.API/Dockerfile
+    container_name: mtau-api
+    ports:
+      - "5144:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Data Source=/data/mtau.db
+      - Jwt__Key=${JWT_KEY:-M-TAU_SuperSecretKey_ChangeThisInProduction_2026!}
+      - Jwt__Issuer=M-TAU.API
+      - Jwt__Audience=M-TAU.Client
+    volumes:
+      - mtau-data:/data
+      - mtau-uploads:/app/wwwroot/uploads
+    restart: unless-stopped
+
+  client:
+    build:
+      context: .
+      dockerfile: M-TAU.Client/Dockerfile
+    container_name: mtau-client
+    ports:
+      - "5213:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  mtau-data:
+  mtau-uploads:

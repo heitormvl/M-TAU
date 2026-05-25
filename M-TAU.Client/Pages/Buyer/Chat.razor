@@ -1,8 +1,12 @@
 @page "/buyer/chat/{SessionId:guid}"
 @page "/seller/chat/{SessionId:guid}"
+@using Microsoft.AspNetCore.SignalR.Client
 @inject HttpClient Http
+@inject NavigationManager Nav
 @inject ISnackbar Snackbar
 @inject AuthenticationStateProvider AuthStateProvider
+@inject TokenAuthenticationStateProvider TokenProvider
+@implements IAsyncDisposable
 
 <PageTitle>Chat — M-TAU</PageTitle>
 
@@ -12,6 +16,15 @@
         <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
                        Href="/buyer/chat" aria-label="Voltar para negociações" />
         <MudText Typo="Typo.h6" Class="ml-2">Negociação</MudText>
+        <MudSpacer />
+        @if (_connected)
+        {
+            <MudChip T="string" Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.Circle">Online</MudChip>
+        }
+        else
+        {
+            <MudChip T="string" Color="Color.Warning" Size="Size.Small" Icon="@Icons.Material.Filled.Circle">Conectando…</MudChip>
+        }
     </MudAppBar>
 
     @* Messages *@
@@ -40,7 +53,7 @@
                       aria-label="Campo de mensagem"
                       autocomplete="off" />
         <MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary"
-                       OnClick="SendAsync" Disabled="_sending"
+                       OnClick="SendAsync" Disabled="@(_sending || !_connected)"
                        aria-label="Enviar mensagem" />
     </div>
 </MudPaper>
@@ -51,8 +64,10 @@
     private List<MessageResponseDto> _messages = [];
     private bool _loading = true;
     private bool _sending;
+    private bool _connected;
     private string _newMessage = string.Empty;
     private Guid _currentUserId;
+    private HubConnection? _hub;
 
     protected override async Task OnInitializedAsync()
     {
@@ -74,26 +89,62 @@
         {
             _loading = false;
         }
+
+        await ConnectHubAsync();
+    }
+
+    private async Task ConnectHubAsync()
+    {
+        var baseUri = Http.BaseAddress ?? new Uri(Nav.BaseUri);
+        var hubUri = new Uri(baseUri, "hubs/chat");
+
+        _hub = new HubConnectionBuilder()
+            .WithUrl(hubUri, options =>
+            {
+                options.AccessTokenProvider = async () => await TokenProvider.GetTokenAsync();
+            })
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hub.On<MessageResponseDto>("ReceiveMessage", msg =>
+        {
+            if (!_messages.Any(m => m.Id == msg.Id))
+            {
+                _messages.Add(msg);
+                InvokeAsync(StateHasChanged);
+            }
+        });
+
+        _hub.Reconnected += async _ =>
+        {
+            await _hub!.SendAsync("JoinSession", SessionId);
+        };
+
+        try
+        {
+            await _hub.StartAsync();
+            await _hub.SendAsync("JoinSession", SessionId);
+            _connected = true;
+        }
+        catch
+        {
+            Snackbar.Add("Falha ao conectar ao chat em tempo real.", Severity.Warning);
+        }
     }
 
     private async Task SendAsync()
     {
-        if (string.IsNullOrWhiteSpace(_newMessage)) return;
+        if (string.IsNullOrWhiteSpace(_newMessage) || _hub is null) return;
         _sending = true;
         try
         {
             var dto = new MessageCreateDto(SessionId, _currentUserId, _newMessage);
-            var response = await Http.PostAsJsonAsync($"api/chatsessions/{SessionId}/messages", dto);
-            if (response.IsSuccessStatusCode)
-            {
-                var saved = await response.Content.ReadFromJsonAsync<MessageResponseDto>();
-                if (saved is not null) _messages.Add(saved);
-                _newMessage = string.Empty;
-            }
-            else
-            {
-                Snackbar.Add("Erro ao enviar mensagem.", Severity.Error);
-            }
+            await _hub.SendAsync("SendMessage", dto);
+            _newMessage = string.Empty;
+        }
+        catch
+        {
+            Snackbar.Add("Erro ao enviar mensagem.", Severity.Error);
         }
         finally
         {
@@ -105,5 +156,14 @@
     {
         if (e.Key == "Enter" && !e.ShiftKey)
             await SendAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hub is not null)
+        {
+            try { await _hub.SendAsync("LeaveSession", SessionId); } catch { }
+            await _hub.DisposeAsync();
+        }
     }
 }

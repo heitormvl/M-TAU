@@ -1,3 +1,8 @@
 <Solution>
   <Project Path="M-TAU.Domain/M-TAU.Domain.csproj" />
+  <Project Path="M-TAU.Application/M-TAU.Application.csproj" />
+  <Project Path="M-TAU.Infrastructure/M-TAU.Infrastructure.csproj" />
+  <Project Path="M-TAU.API/M-TAU.API.csproj" />
+  <Project Path="M-TAU.Client/M-TAU.Client.csproj" />
+  <Project Path="M-TAU.Tests/M-TAU.Tests.csproj" />
 </Solution>

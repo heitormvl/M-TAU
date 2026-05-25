@@ -1,6 +1,8 @@
 @page "/seller/dashboard"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Seller,Admin")]
 @inject HttpClient Http
 @inject NavigationManager Nav
+@inject ISnackbar Snackbar
 
 <PageTitle>Dashboard — M-TAU Vendedor</PageTitle>
 
@@ -76,11 +78,27 @@
     private int _activeProducts;
     private int _pendingOrders;
     private int _completedOrders;
+    private decimal _revenue;
     private double _avgRating = 4.0;
 
     protected override async Task OnInitializedAsync()
     {
-        // TODO: carregar métricas reais da API com sellerId autenticado
-        await Task.CompletedTask;
+        try
+        {
+            var m = await Http.GetFromJsonAsync<SellerMetrics>("api/seller/metrics");
+            if (m is not null)
+            {
+                _activeProducts = m.ActiveListings;
+                _pendingOrders = m.PendingOrders;
+                _completedOrders = m.TotalSales;
+                _revenue = m.Revenue;
+            }
+        }
+        catch
+        {
+            Snackbar.Add("Erro ao carregar métricas do vendedor.", Severity.Warning);
+        }
     }
+
+    private sealed record SellerMetrics(int ActiveListings, int TotalSales, int PendingOrders, decimal Revenue);
 }

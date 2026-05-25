@@ -1,3 +1,4 @@
+using M_TAU.Application.Dtos.Common;
 using M_TAU.Application.Dtos.Transaction;
 using M_TAU.Application.Services;
 using M_TAU.Domain.Transaction;
@@ -12,7 +13,7 @@ namespace M_TAU.API.Controllers;
 public sealed class OrdersController(IOrderService orderService) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyCollection<OrderResponseDto>>> GetAll(
+    public async Task<ActionResult<PaginatedResult<OrderResponseDto>>> GetAll(
         [FromQuery] OrderFilterDto filter,
         CancellationToken cancellationToken)
     {

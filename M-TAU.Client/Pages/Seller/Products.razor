@@ -71,13 +71,15 @@ else
         _loading = true;
         try
         {
-            // TODO: filtrar por sellerId autenticado
-            _products = await Http.GetFromJsonAsync<IReadOnlyCollection<ProductResponseDto>>(
-                $"api/products?pageNumber={_currentPage}&pageSize=15") ?? [];
+            var paged = await Http.GetFromJsonAsync<PaginatedResult<ProductResponseDto>>(
+                $"api/products?pageNumber={_currentPage}&pageSize=15");
+            _products = paged?.Items ?? [];
+            _totalPages = paged?.TotalPages ?? 1;
         }
         catch
         {
             _products = [];
+            _totalPages = 1;
         }
         finally { _loading = false; }
     }

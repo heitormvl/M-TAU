@@ -1,4 +1,5 @@
 @page "/admin/products"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
 @inject HttpClient Http
 @inject ISnackbar Snackbar
 
@@ -96,9 +97,11 @@ else
             var qs = $"api/products?pageNumber={_currentPage}&pageSize=20";
             if (!string.IsNullOrWhiteSpace(_search)) qs += $"&title={Uri.EscapeDataString(_search)}";
             if (_statusFilter.HasValue) qs += $"&status={_statusFilter}";
-            _products = await Http.GetFromJsonAsync<IReadOnlyCollection<ProductResponseDto>>(qs) ?? [];
+            var paged = await Http.GetFromJsonAsync<PaginatedResult<ProductResponseDto>>(qs);
+            _products = paged?.Items ?? [];
+            _totalPages = paged?.TotalPages ?? 1;
         }
-        catch { _products = []; }
+        catch { _products = []; _totalPages = 1; }
         finally { _loading = false; }
     }
 

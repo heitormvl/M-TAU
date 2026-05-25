@@ -1,5 +1,6 @@
 using AutoMapper;
 using M_TAU.Application.Dtos.Catalog;
+using M_TAU.Application.Dtos.Common;
 using M_TAU.Domain.Catalog;
 using M_TAU.Domain.Repositories;
 
@@ -14,7 +15,7 @@ public sealed class ProductService(IProductRepository productRepository, IMapper
         return mapper.Map<ProductResponseDto>(product);
     }
 
-    public async Task<IReadOnlyCollection<ProductResponseDto>> GetAllAsync(ProductFilterDto filter, CancellationToken cancellationToken = default)
+    public async Task<PaginatedResult<ProductResponseDto>> GetAllAsync(ProductFilterDto filter, CancellationToken cancellationToken = default)
     {
         IReadOnlyCollection<Product> products;
         if (filter.SellerId.HasValue)
@@ -36,7 +37,17 @@ public sealed class ProductService(IProductRepository productRepository, IMapper
         if (filter.SellerId.HasValue && filter.Category.HasValue)
             query = query.Where(p => p.TechnicalSpec?.Category == filter.Category.Value);
 
-        return mapper.Map<IReadOnlyCollection<ProductResponseDto>>(query.ToList());
+        var filtered = query.ToList();
+        var totalCount = filtered.Count;
+
+        var pageNumber = filter.PageNumber is > 0 ? filter.PageNumber.Value : 1;
+        var pageSize = filter.PageSize is > 0 ? filter.PageSize.Value : totalCount;
+        var paged = pageSize <= 0
+            ? filtered
+            : filtered.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
+        var mapped = mapper.Map<IReadOnlyCollection<ProductResponseDto>>(paged);
+        return PaginatedResult<ProductResponseDto>.Create(mapped, totalCount, pageNumber, pageSize);
     }
 
     public async Task<ProductResponseDto> CreateAsync(ProductCreateDto createDto, CancellationToken cancellationToken = default)

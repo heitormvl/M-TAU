@@ -1,0 +1,16 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.idea/
+**/.vscode/
+**/.venv/
+**/node_modules/
+**/wwwroot/uploads/
+**/mtau.db
+**/mtau.db-*
+.git/
+.github/
+*.user
+*.suo
+docs/
+img/

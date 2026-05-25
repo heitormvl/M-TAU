@@ -20,6 +20,8 @@ public static class DependencyInjection
         services.AddScoped<IChatSessionService, ChatSessionService>();
         services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IFeedbackService, FeedbackService>();
+        services.AddScoped<IPaymentService, PaymentService>();
+        services.AddScoped<IMetricsService, MetricsService>();
 
         return services;
     }

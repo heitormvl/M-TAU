@@ -2,6 +2,7 @@
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>@(_product?.Title ?? "Produto") — M-TAU</PageTitle>
 
@@ -145,9 +146,41 @@ else
         }
     }
 
-    private void StartChat()
+    private async Task StartChat()
     {
-        // TODO: criar sessão de chat via API e navegar para ela
-        Snackbar.Add("Funcionalidade de chat em desenvolvimento.", Severity.Info);
+        if (_product is null) return;
+
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated != true)
+        {
+            Snackbar.Add("Faça login para iniciar uma negociação.", Severity.Info);
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        var sub = state.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(sub, out var buyerId))
+        {
+            Snackbar.Add("Sessão inválida. Faça login novamente.", Severity.Error);
+            return;
+        }
+
+        try
+        {
+            var dto = new ChatSessionCreateDto(buyerId, _product.SellerId, _product.Id);
+            var response = await Http.PostAsJsonAsync("api/chatsessions", dto);
+            if (!response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Erro ao iniciar negociação.", Severity.Error);
+                return;
+            }
+            var session = await response.Content.ReadFromJsonAsync<ChatSessionResponseDto>();
+            if (session is not null)
+                Nav.NavigateTo($"/buyer/chat/{session.Id}");
+        }
+        catch
+        {
+            Snackbar.Add("Erro ao iniciar negociação.", Severity.Error);
+        }
     }
 }

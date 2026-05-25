@@ -48,7 +48,9 @@ public sealed class UserService(IUserRepository userRepository, IMapper mapper) 
     {
         var user = await userRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException($"User '{id}' not found.");
-        await userRepository.DeleteAsync(user, cancellationToken);
+
+        user.Anonymize();
+        await userRepository.UpdateAsync(user, cancellationToken);
     }
 
     public async Task<User?> ValidateCredentialsAsync(string email, string password, CancellationToken cancellationToken = default)

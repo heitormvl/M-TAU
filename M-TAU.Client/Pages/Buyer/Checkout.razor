@@ -121,22 +121,47 @@ else
         try
         {
             var dto = new OrderCreateDto(_currentUserId, ProductId, _product!.Price);
-            var response = await Http.PostAsJsonAsync("api/orders", dto);
-            if (response.IsSuccessStatusCode)
-            {
-                Snackbar.Add("Pedido criado! Integração com gateway de pagamento pendente.", Severity.Success);
-                Nav.NavigateTo("/buyer/orders");
-            }
-            else
+            var orderResponse = await Http.PostAsJsonAsync("api/orders", dto);
+            if (!orderResponse.IsSuccessStatusCode)
             {
                 Snackbar.Add("Erro ao criar pedido.", Severity.Error);
+                return;
             }
+
+            var order = await orderResponse.Content.ReadFromJsonAsync<OrderResponseDto>();
+            if (order is null)
+            {
+                Snackbar.Add("Erro ao processar pedido.", Severity.Error);
+                return;
+            }
+
+            var checkoutResponse = await Http.PostAsJsonAsync(
+                "api/payments/checkout",
+                new { OrderId = order.Id });
+
+            if (!checkoutResponse.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Erro ao iniciar pagamento.", Severity.Error);
+                return;
+            }
+
+            var payment = await checkoutResponse.Content.ReadFromJsonAsync<PaymentRedirect>();
+            if (payment is null || string.IsNullOrWhiteSpace(payment.CheckoutUrl))
+            {
+                Snackbar.Add("Erro ao obter URL de pagamento.", Severity.Error);
+                return;
+            }
+
+            Snackbar.Add("Redirecionando para o gateway de pagamento…", Severity.Success);
+            Nav.NavigateTo(payment.CheckoutUrl, forceLoad: true);
         }
         finally
         {
             _submitting = false;
         }
     }
+
+    private sealed record PaymentRedirect(Guid OrderId, string CheckoutUrl, string Provider);
 
     private sealed class CheckoutForm
     {

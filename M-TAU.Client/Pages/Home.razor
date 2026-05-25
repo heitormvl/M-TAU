@@ -92,8 +92,9 @@
     {
         try
         {
-            _recentProducts = await Http.GetFromJsonAsync<IReadOnlyCollection<ProductResponseDto>>(
-                "api/products?pageNumber=1&pageSize=8") ?? [];
+            var paged = await Http.GetFromJsonAsync<PaginatedResult<ProductResponseDto>>(
+                "api/products?pageNumber=1&pageSize=8");
+            _recentProducts = paged?.Items ?? [];
         }
         catch
         {

@@ -105,11 +105,14 @@
         try
         {
             var url = BuildUrl();
-            _products = await Http.GetFromJsonAsync<IReadOnlyCollection<ProductResponseDto>>(url) ?? [];
+            var paged = await Http.GetFromJsonAsync<PaginatedResult<ProductResponseDto>>(url);
+            _products = paged?.Items ?? [];
+            _totalPages = paged?.TotalPages ?? 1;
         }
         catch
         {
             _products = [];
+            _totalPages = 1;
         }
         finally
         {

@@ -55,4 +55,11 @@ public class User : EntityBase<Guid>
 
         Email = email.Trim().ToLowerInvariant();
     }
+
+    public void Anonymize()
+    {
+        Name = "Usuário removido";
+        Email = $"removido-{Id}@m-tau.local";
+        PasswordHash = "DELETED";
+    }
 }

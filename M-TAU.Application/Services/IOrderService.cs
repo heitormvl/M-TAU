@@ -1,3 +1,4 @@
+using M_TAU.Application.Dtos.Common;
 using M_TAU.Application.Dtos.Transaction;
 using M_TAU.Domain.Transaction;
 
@@ -7,7 +8,7 @@ public interface IOrderService
 {
     Task<OrderResponseDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyCollection<OrderResponseDto>> GetAllAsync(OrderFilterDto filter, CancellationToken cancellationToken = default);
+    Task<PaginatedResult<OrderResponseDto>> GetAllAsync(OrderFilterDto filter, CancellationToken cancellationToken = default);
 
     Task<OrderResponseDto> CreateAsync(OrderCreateDto createDto, CancellationToken cancellationToken = default);
 
