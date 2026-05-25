@@ -17,7 +17,8 @@ builder.Services.AddScoped(sp =>
 {
     var handler = sp.GetRequiredService<BearerTokenHandler>();
     handler.InnerHandler = new HttpClientHandler();
-    return new HttpClient(handler) { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
+    var apiBase = builder.Configuration["ApiBaseUrl"] ?? builder.HostEnvironment.BaseAddress;
+    return new HttpClient(handler) { BaseAddress = new Uri(apiBase) };
 });
 builder.Services.AddAuthorizationCore();
 builder.Services.AddMudServices();
