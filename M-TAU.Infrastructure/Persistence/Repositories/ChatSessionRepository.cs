@@ -23,11 +23,12 @@ public sealed class ChatSessionRepository(AppDbContext context) : IChatSessionRe
     {
         if (context.Entry(entity).State == EntityState.Detached)
             context.Entry(entity).State = EntityState.Modified;
-        foreach (var message in entity.Messages)
-        {
-            if (context.Entry(message).State == EntityState.Detached)
-                context.Entry(message).State = EntityState.Added;
-        }
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task AddMessageAsync(Message message, CancellationToken cancellationToken = default)
+    {
+        await context.Messages.AddAsync(message, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
     }
 

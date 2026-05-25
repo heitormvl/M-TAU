@@ -7,4 +7,6 @@ public interface IChatSessionRepository : IRepository<ChatSession, Guid>
     Task<IReadOnlyCollection<ChatSession>> ListByParticipantAsync(Guid userId, CancellationToken cancellationToken = default);
 
     Task<ChatSession?> GetWithMessagesAsync(Guid sessionId, CancellationToken cancellationToken = default);
+
+    Task AddMessageAsync(Message message, CancellationToken cancellationToken = default);
 }
