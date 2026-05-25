@@ -16,8 +16,27 @@ public sealed class ProductService(IProductRepository productRepository, IMapper
 
     public async Task<IReadOnlyCollection<ProductResponseDto>> GetAllAsync(ProductFilterDto filter, CancellationToken cancellationToken = default)
     {
-        var products = await productRepository.ListAsync(cancellationToken);
-        return mapper.Map<IReadOnlyCollection<ProductResponseDto>>(products);
+        IReadOnlyCollection<Product> products;
+        if (filter.SellerId.HasValue)
+            products = await productRepository.ListBySellerAsync(filter.SellerId.Value, cancellationToken);
+        else if (filter.Category.HasValue)
+            products = await productRepository.ListByCategoryAsync(filter.Category.Value, cancellationToken);
+        else
+            products = await productRepository.ListAsync(cancellationToken);
+
+        var query = products.AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(filter.Title))
+            query = query.Where(p => p.Title.Contains(filter.Title, StringComparison.OrdinalIgnoreCase));
+        if (filter.MinPrice.HasValue)
+            query = query.Where(p => p.Price >= filter.MinPrice.Value);
+        if (filter.MaxPrice.HasValue)
+            query = query.Where(p => p.Price <= filter.MaxPrice.Value);
+        if (filter.Status.HasValue)
+            query = query.Where(p => p.Status == filter.Status.Value);
+        if (filter.SellerId.HasValue && filter.Category.HasValue)
+            query = query.Where(p => p.TechnicalSpec?.Category == filter.Category.Value);
+
+        return mapper.Map<IReadOnlyCollection<ProductResponseDto>>(query.ToList());
     }
 
     public async Task<ProductResponseDto> CreateAsync(ProductCreateDto createDto, CancellationToken cancellationToken = default)

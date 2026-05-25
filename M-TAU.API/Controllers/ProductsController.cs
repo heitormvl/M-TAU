@@ -11,6 +11,7 @@ namespace M_TAU.API.Controllers;
 [Route("api/[controller]")]
 public sealed class ProductsController(IProductService productService) : ControllerBase
 {
+    [AllowAnonymous]
     [HttpGet]
     public async Task<ActionResult<IReadOnlyCollection<ProductResponseDto>>> GetAll(
         [FromQuery] ProductFilterDto filter,
@@ -20,6 +21,7 @@ public sealed class ProductsController(IProductService productService) : Control
         return Ok(result);
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ProductResponseDto>> GetById(
         Guid id,

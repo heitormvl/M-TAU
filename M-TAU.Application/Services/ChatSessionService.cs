@@ -16,8 +16,18 @@ public sealed class ChatSessionService(IChatSessionRepository chatSessionReposit
 
     public async Task<IReadOnlyCollection<ChatSessionResponseDto>> GetAllAsync(ChatSessionFilterDto filter, CancellationToken cancellationToken = default)
     {
-        var sessions = await chatSessionRepository.ListAsync(cancellationToken);
-        return mapper.Map<IReadOnlyCollection<ChatSessionResponseDto>>(sessions);
+        IReadOnlyCollection<ChatSession> sessions;
+        var userId = filter.BuyerId ?? filter.SellerId;
+        if (userId.HasValue)
+            sessions = await chatSessionRepository.ListByParticipantAsync(userId.Value, cancellationToken);
+        else
+            sessions = await chatSessionRepository.ListAsync(cancellationToken);
+
+        var query = sessions.AsEnumerable();
+        if (filter.ProductId.HasValue)
+            query = query.Where(s => s.ProductId == filter.ProductId.Value);
+
+        return mapper.Map<IReadOnlyCollection<ChatSessionResponseDto>>(query.ToList());
     }
 
     public async Task<ChatSessionResponseDto> CreateAsync(ChatSessionCreateDto createDto, CancellationToken cancellationToken = default)
